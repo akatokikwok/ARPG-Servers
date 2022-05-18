@@ -29,7 +29,8 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 {
 	Super::RecvProtocol(InProtocol);
 
-	switch (InProtocol) {
+	switch (InProtocol) 
+	{
 		case SP_GateStatusRequests:
 		{
 			FMMOARPGGateStatus Status;
@@ -40,7 +41,7 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 
 			SIMPLE_PROTOCOLS_SEND(SP_GateStatusResponses, Status);// 本服务器往外发一个 响应协议.
 
-			UE_LOG(LogMMOARPGGateServer, Display, TEXT("SP_GateStatusRequests, 网关状态"));// 网关服务器往外发送请求.
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("SP_GateStatusRequests, Gate State"));// 网关服务器往外发送请求.
 			break;
 		}
 

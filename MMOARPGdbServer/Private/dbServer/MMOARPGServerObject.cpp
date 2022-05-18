@@ -142,13 +142,16 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, UserID, AddrInfo);
 			UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CharacterAppearanceResponses], db 收到了捏脸玩家形象请求."));
 
-			if (UserID >= INDEX_NONE) {// ID在数据库里正常大于0.
+			if (UserID > 0.0f) {// ID在数据库里正常大于0.
 				// 关联玩家形象的数据库数据,目前先写死,作假.
 				FCharacterAppearances CharacterAppearances;
 				CharacterAppearances.Add(FMMOARPGCharacterAppearance());
 				FMMOARPGCharacterAppearance& InLastAppear = CharacterAppearances.Last();
 				InLastAppear.Lv = 14;
-				InLastAppear.Name = TEXT("Test Character");
+				InLastAppear.Date = TEXT("2022.5.18");
+				InLastAppear.Name = TEXT("之钠波");
+				InLastAppear.SlotPosition = 1;
+				
 
 				// 把数据源压缩成JSON
 				FString JsonString;
