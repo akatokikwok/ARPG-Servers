@@ -148,7 +148,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 				CharacterAppearances.Add(FMMOARPGCharacterAppearance());
 				FMMOARPGCharacterAppearance& InLastAppear = CharacterAppearances.Last();
 				InLastAppear.Lv = 14;
-				InLastAppear.Date = TEXT("2022.5.18");
+				InLastAppear.Date = FDateTime::Now().ToString();// 真实世界的时间点.
 				InLastAppear.Name = TEXT("之钠波");
 				InLastAppear.SlotPosition = 1;
 				
