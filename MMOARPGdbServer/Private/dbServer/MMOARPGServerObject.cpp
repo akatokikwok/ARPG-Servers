@@ -150,7 +150,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 				InLastAppear.Lv = 14;
 				InLastAppear.Date = FDateTime::Now().ToString();// 真实世界的时间点.
 				InLastAppear.Name = TEXT("之钠波");
-				InLastAppear.SlotPosition = 1;
+				InLastAppear.SlotPosition = 1;// 这份CA存档 槽号暂设定为1.
 				
 
 				// 把数据源压缩成JSON
