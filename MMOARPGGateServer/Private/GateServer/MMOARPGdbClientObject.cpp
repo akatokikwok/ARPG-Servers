@@ -36,7 +36,29 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 
 			SIMPLE_SERVER_SEND(GateServer, SP_CharacterAppearanceResponses, AddrInfo, String1);// 再将string1里的json数据发回至网关服务器.
 
-			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CharacterAppearanceResponses], db客户端响应玩家形象请求."));
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CharacterAppearanceResponses], Gate-dbClient-Response-CharacterAppearance."));
+			break;
+		}
+
+		/** 角色命名核验之db端的回应: 发给上一层GateServer之后, GateServer再发给客户端. */
+		case SP_CheckCharacterNameResponses :
+		{
+			FSimpleAddrInfo AddrInfo;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameResponses, AddrInfo);// 收到来自 db-server-checkCharacterName的Response数据.
+			SIMPLE_SERVER_SEND(GateServer, SP_CheckCharacterNameResponses, AddrInfo);// 将Response数据 转发至 gate-server;
+
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CheckCharacterNameResponses], Gate-dbClient-Response-CheckCharacterName."));
+			break;
+		}
+
+		/** 创建舞台人物之db-Server端的回应: 发给上一层GateServer之后, GateServer再发给客户端. */
+		case SP_CreateCharacterResponses:
+		{
+			FSimpleAddrInfo AddrInfo;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, AddrInfo);// 收到来自 db-server-CreateCharacter的Response数据.
+			SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo);// 将Response数据 转发至 gate-server;
+
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CreateCharacterResponses], Gate-dbClient-Response-CreateCharacter."));
 			break;
 		}
 	}

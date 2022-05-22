@@ -134,13 +134,14 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 舞台人物造型请求. */
 		case SP_CharacterAppearanceRequests:// 收到协议: 来自网关转发的客户端玩家形象协议.
 		{
 			// 接收到来自网关转发的客户端玩家形象 Request协议.
 			int32 UserID = INDEX_NONE;
 			FSimpleAddrInfo AddrInfo;// 需要那个接收数据源的网关服务器地址.
 			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, UserID, AddrInfo);
-			UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CharacterAppearanceResponses], db 收到了捏脸玩家形象请求."));
+// 			UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CharacterAppearanceResponses], db 收到了捏脸玩家形象请求."));
 
 			if (UserID > 0.0f) {// ID在数据库里正常大于0.
 				// 关联玩家形象的数据库数据,目前先写死,作假.
@@ -160,6 +161,43 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 				// 发回去
 				SIMPLE_PROTOCOLS_SEND(SP_CharacterAppearanceResponses, AddrInfo, JsonString);
 				UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CharacterAppearanceResponses], dbServer已发送Response!!!!!"));
+			}
+			break;
+		}
+
+		/** 核验角色命名的请求: */
+		case SP_CheckCharacterNameRequests:// 收到协议: 来自网关转发的 核验角色命名的请求.
+		{
+			/* 收到来自网关的数据请求. */
+			int32 UserID = INDEX_NONE;// 用户ID
+			FString CharacterName;// 键入的待核验名称.
+			FSimpleAddrInfo AddrInfo;// 中转作用的网关地址.
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameRequests, UserID, CharacterName, AddrInfo);
+
+			if (UserID > 0.0f) {// ID在数据库里正常大于0.
+
+				// 处理完之后 把回复 发回至 Gate-dbClient
+				SIMPLE_PROTOCOLS_SEND(SP_CheckCharacterNameResponses, AddrInfo);
+				// Print.
+				UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CheckCharacterNameResponses], db-server-CheckCharacterName."));
+			}
+			break;
+		}
+
+		/** 创建一个舞台角色的请求.*/
+		case SP_CreateCharacterRequests : 
+		{
+			/* 收到来自网关的数据请求. */
+			int32 UserID = INDEX_NONE;// 用户ID
+			FSimpleAddrInfo AddrInfo;// 中转作用的网关地址.
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, UserID, AddrInfo);
+
+			if (UserID > 0.0f) {// ID在数据库里正常大于0.
+
+				// 处理完之后 把回复 发回至 Gate-dbClient
+				SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, AddrInfo);
+				// Print.
+				UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CreateCharacterResponses], db-server-CreateCharacter."));
 			}
 			break;
 		}

@@ -29,8 +29,7 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 {
 	Super::RecvProtocol(InProtocol);
 
-	switch (InProtocol) 
-	{
+	switch (InProtocol) {
 		case SP_GateStatusRequests:
 		{
 			FMMOARPGGateStatus Status;
@@ -45,18 +44,54 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
-		case SP_CharacterAppearanceRequests :// 玩家形象Requests 来自 UUI_HallMain::Callback_LinkServerInfo.
+		/** 玩家造型请求. */
+		case SP_CharacterAppearanceRequests:// 玩家形象Requests 来自 UUI_HallMain::Callback_LinkServerInfo.
 		{
 			// 先获取来自客户端Hallmain发来的 玩家形象的用户ID.
 			int32 PlayerID = INDEX_NONE;
 			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, PlayerID);
-			
+
 			// 获取当前本网关 服务器的地址, 并把请求转发到db端.
 			FSimpleAddrInfo AddrInfo;
 			GetRemoteAddrInfo(AddrInfo);
 			SIMPLE_CLIENT_SEND(dbClient, SP_CharacterAppearanceRequests, PlayerID, AddrInfo);
 
-			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CharacterAppearanceRequests], UserID = %i, 网关收到客户端SP_CharacterAppearanceRequests并转发至db端."), PlayerID);
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CharacterAppearanceRequests], UserID = %i"), PlayerID);
+			break;
+		}
+
+		/** 核验角色命名请求. */
+		case SP_CheckCharacterNameRequests:// 来自 UUI_RenameCreate::Callback_ClickedFindName()
+		{
+			int32 PlayerID = INDEX_NONE;// 玩家ID.
+			FString CharacterName;// 玩家名字.
+			// 读一下来自客户端请求的 玩家ID和玩家名字.
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameRequests, PlayerID, CharacterName);
+
+			// 拿到本网关地址并转发数据至 db端. dbClient端会做一个接收.
+			FSimpleAddrInfo AddrInfo;
+			GetRemoteAddrInfo(AddrInfo);
+			SIMPLE_CLIENT_SEND(dbClient, SP_CheckCharacterNameRequests, PlayerID, CharacterName, AddrInfo);
+
+			// Print.
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CheckCharacterNameRequests], UserID = %i"), PlayerID);
+			break;
+		}
+
+		/** 创建舞台人物请求. */
+		case SP_CreateCharacterRequests :// 来自 UUI_RenameCreate::ClickedCreate_callback()
+		{
+			int32 PlayerID = INDEX_NONE;// 玩家ID.
+			FString JsonString;
+			// 读一下收到的来自客户端请求的 玩家ID
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, PlayerID, JsonString);
+
+			// 拿到本网关地址并转发数据至 db端. dbClient端会做一个接收.
+			FSimpleAddrInfo AddrInfo;
+			GetRemoteAddrInfo(AddrInfo);
+			SIMPLE_CLIENT_SEND(dbClient, SP_CreateCharacterRequests, PlayerID, JsonString, AddrInfo);
+
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CreateCharacterRequests] UserID = %i"), PlayerID);
 			break;
 		}
 	}
