@@ -40,6 +40,17 @@ void UMMOARPGServerObejct::Init()
 //  	
 //  	}
 
+	// 初始化一下 SQL语句: 它负责创建一张表`mmoarpg_characters_c.
+	FString Create_mmoarpg_character_ca_SQL = TEXT("CREATE TABLE IF NOT EXISTS `mmoarpg_characters_ca`(\
+		`id` INT UNSIGNED AUTO_INCREMENT,\
+		`mmoarpg_name` VARCHAR(100) NOT NULL,\
+		`mmoarpg_date` VARCHAR(100) NOT NULL,\
+		PRIMARY KEY(`id`)\
+		) ENGINE = INNODB DEFAULT CHARSET = utf8mb4; ");
+	if (!Post(Create_mmoarpg_character_ca_SQL)) {
+		UE_LOG(LogMMOARPGdbServer, Error, TEXT("we create table mmoarpg_characters_ca failed."));// 如果Post失败就打印提示 创表失败.
+	}
+
 }
 
 void UMMOARPGServerObejct::Tick(float DeltaTime)
