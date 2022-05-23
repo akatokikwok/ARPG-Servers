@@ -3,6 +3,7 @@
 #include "Protocol/HallProtocol.h"
 #include "SimpleProtocolsDefinition.h"
 #include <ServerList.h>
+#include "MMOARPGType.h"
 
 void UMMOARPGdbClientObject::Init()
 {
@@ -44,8 +45,10 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 		case SP_CheckCharacterNameResponses :
 		{
 			FSimpleAddrInfo AddrInfo;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameResponses, AddrInfo);// 收到来自 db-server-checkCharacterName的Response数据.
-			SIMPLE_SERVER_SEND(GateServer, SP_CheckCharacterNameResponses, AddrInfo);// 将Response数据 转发至 gate-server;
+			ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;// 核验类型.
+
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameResponses, CheckNameType, AddrInfo);// 收到来自 db-server-checkCharacterName的Response数据.
+			SIMPLE_SERVER_SEND(GateServer, SP_CheckCharacterNameResponses, AddrInfo, CheckNameType);// 将Response数据 转发至 gate-server;
 
 			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CheckCharacterNameResponses], Gate-dbClient-Response-CheckCharacterName."));
 			break;

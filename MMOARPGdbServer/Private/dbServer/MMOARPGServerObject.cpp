@@ -183,15 +183,33 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			int32 UserID = INDEX_NONE;// 用户ID
 			FString CharacterName;// 键入的待核验名称.
 			FSimpleAddrInfo AddrInfo;// 中转作用的网关地址.
-			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameRequests, UserID, CharacterName, AddrInfo);
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameRequests, UserID, CharacterName, AddrInfo);// 收到来自网关的数据请求.
 
+			ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
 			if (UserID > 0.0f) {// ID在数据库里正常大于0.
-
-				// 处理完之后 把回复 发回至 Gate-dbClient
-				SIMPLE_PROTOCOLS_SEND(SP_CheckCharacterNameResponses, AddrInfo);
-				// Print.
-				UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CheckCharacterNameResponses], db-server-CheckCharacterName."));
+				/** 使用SQL语句向db查询这个键入的待核验名字. */
+				FString SQL = FString::Printf(
+					TEXT("SELECT id FROM mmoarpg_characters_ca WHERE mmoarpg_name = \"%s\";"), *CharacterName);
+				
+				/** 使用语句拉取db上的表数据. */
+				TArray<FSimpleMysqlResult> Result;
+				if (Get(SQL, Result) == true) { 
+					if (Result.Num() > 0) {/* 说明db上存在名字.*/
+						CheckNameType = ECheckNameType::NAME_EXIST;
+					}
+					else {/* 说明db上不存在名字.*/
+						CheckNameType = ECheckNameType::NAME_NOT_EXIST;
+					}
+				}
+				else {/* 说明服务器出问题.*/
+					CheckNameType = ECheckNameType::SERVER_NOT_EXIST;
+				}
 			}
+
+			// 处理完之后 把回复 发回至 Gate-dbClient
+			SIMPLE_PROTOCOLS_SEND(SP_CheckCharacterNameResponses, CheckNameType, AddrInfo);
+			// Print.
+			UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CheckCharacterNameResponses], db-server-CheckCharacterName."));
 			break;
 		}
 
