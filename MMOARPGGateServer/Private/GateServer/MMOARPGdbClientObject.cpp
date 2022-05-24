@@ -60,9 +60,10 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 			FSimpleAddrInfo AddrInfo;// 网关地址.
 			ECheckNameType NameType = ECheckNameType::UNKNOWN_ERROR;// 核验结果
 			bool bCreateCharacter = false;// 创建信号.
+			FString JsonString;
 
-			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, NameType, bCreateCharacter, AddrInfo);// 收到来自 db-server-CreateCharacter的Response数据.
-			SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo, NameType, bCreateCharacter);// 将Response数据 转发至 gate-server;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, NameType, bCreateCharacter, JsonString, AddrInfo);// 收到来自 db-server-CreateCharacter的Response数据.
+			SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo, NameType, bCreateCharacter, JsonString);// 将Response数据 转发至 gate-server;
 
 			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CreateCharacterResponses], Gate-dbClient-Response-CreateCharacter."));
 			break;

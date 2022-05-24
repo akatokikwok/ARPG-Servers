@@ -337,7 +337,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 									UserID, *IDStirng);
 							}
 
-							if (Post(SQL) == false) {/* 提交SQL语句失败也刷新创建信号为假. */
+							if (!Post(SQL)) {/* 提交SQL语句失败也刷新创建信号为假. */
 								bCreateCharacter = false;
 							}
 						}
