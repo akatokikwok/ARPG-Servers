@@ -57,9 +57,12 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 		/** 创建舞台人物之db-Server端的回应: 发给上一层GateServer之后, GateServer再发给客户端. */
 		case SP_CreateCharacterResponses:
 		{
-			FSimpleAddrInfo AddrInfo;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, AddrInfo);// 收到来自 db-server-CreateCharacter的Response数据.
-			SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo);// 将Response数据 转发至 gate-server;
+			FSimpleAddrInfo AddrInfo;// 网关地址.
+			ECheckNameType NameType = ECheckNameType::UNKNOWN_ERROR;// 核验结果
+			bool bCreateCharacter = false;// 创建信号.
+
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterResponses, NameType, bCreateCharacter, AddrInfo);// 收到来自 db-server-CreateCharacter的Response数据.
+			SIMPLE_SERVER_SEND(GateServer, SP_CreateCharacterResponses, AddrInfo, NameType, bCreateCharacter);// 将Response数据 转发至 gate-server;
 
 			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CreateCharacterResponses], Gate-dbClient-Response-CreateCharacter."));
 			break;

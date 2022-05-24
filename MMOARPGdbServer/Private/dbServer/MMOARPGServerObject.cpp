@@ -177,10 +177,9 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 						}
 					}
 				}
-				
+
 				/// 拿到我们的角色数据.
-				if (!IDs.IsEmpty())
-				{
+				if (!IDs.IsEmpty()) {
 					// 从表mmoarpg_characters_ca查找id属于IDs的所有行.
 					FString SQL = FString::Printf(TEXT("SELECT * from mmoarpg_characters_ca where id in (%s);"), *IDs);
 					// 
@@ -188,7 +187,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 					if (Get(SQL, Result)) {
 						if (Result.Num() > 0) {
 							for (auto& Tmp : Result) {// 每一行.
-								
+
 								/* 对 新增存档各属性部分执行设置. */
 								CharacterAppearances.Add(FMMOARPGCharacterAppearance());
 								FMMOARPGCharacterAppearance& InLast = CharacterAppearances.Last();
@@ -258,10 +257,13 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 
 					/// 0.核验键入的名字并返回1个检查结果.
 					ECheckNameType NameType_check = CheckName(CA_receive.Name);
+					bool bCreateCharacter = false;// 创建角色信号.
+
 
 					/// 当且仅当 核验类型为新增的名字,原本数据库里不存在的.
 					if (NameType_check == ECheckNameType::NAME_NOT_EXIST) {
 						TArray<FString> CAIDs;// 所有扫到的用户ID.
+						bool bMeta = false;// 是否存在元数据.
 
 						/// 1.先拿到用户数据.
 						{
@@ -277,18 +279,18 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 											InMetaValue->ParseIntoArray(CAIDs, TEXT("|"));// 把类似2|3|4这种拆出来 2 3 4,存进CAIDs.
 										}
 									}
+									bMeta = true;
 								}
-								else {/* 说明db上不存在名字.*/
-
-								}
+								bCreateCharacter = true;// 确认创建信号.
 							}
 						}
 
 						/// 2.插入数据
+						if (bCreateCharacter == true)/* 仅当有创建信号. */
 						{
 							FString SQL = FString::Printf(TEXT("INSERT INTO mmoarpg_characters_ca(\
-							mmoarpg_name,mmoarpg_date,mmoarpg_slot) \
-							VALUES(\"%s\",\"%s\",%i);"),
+								mmoarpg_name,mmoarpg_date,mmoarpg_slot) \
+								VALUES(\"%s\",\"%s\",%i);"),
 								*CA_receive.Name, *CA_receive.Date, CA_receive.SlotPosition);
 
 							// 向数据库提交这条插入命令如果成功.就把语句刷新为按名字查找.
@@ -304,10 +306,17 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 										}
 									}
 								}
+								else {
+									bCreateCharacter = false;
+								}
+							}
+							else {
+								bCreateCharacter = false;
 							}
 						}
 
 						/// 3.更新元数据
+						if (bCreateCharacter == true)/* 仅当有创建信号. */
 						{
 							// 之前已经拿取到完整的 CAIDs, 故下一步执行拼接字符串.
 							FString IDStirng;
@@ -316,19 +325,27 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 							}
 							IDStirng.RemoveFromEnd(TEXT("|"));
 
-							// 使用新语句更新.
-							FString SQL = FString::Printf(TEXT("UPDATE wp_usermeta \
-							SET meta_value=\"%s\" WHERE meta_key=\"character_ca\" and user_id=%i;"),
-								*IDStirng, UserID);
-							if (Post(SQL) == true) {
+							FString SQL;
+							if (bMeta == true) {// 仅当存在元数据, 则使用 SQL语句:更新.
+								SQL = FString::Printf(TEXT("UPDATE wp_usermeta \
+									SET meta_value=\"%s\" WHERE meta_key=\"character_ca\" and user_id=%i;"),
+									*IDStirng, UserID);
+							}
+							else {// 没有元数据. 则使用SQL语句: 插入.
+								SQL = FString::Printf(TEXT("INSERT INTO wp_usermeta( \
+									user_id,meta_key,meta_value) VALUES(%i,\"character_ca\",\"%s\")"),
+									UserID, *IDStirng);
+							}
 
+							if (Post(SQL) == false) {/* 提交SQL语句失败也刷新创建信号为假. */
+								bCreateCharacter = false;
 							}
 						}
 
 					}
 
 					// 处理完之后 把Response 发回至 Gate-dbClient
-					SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, NameType_check, AddrInfo);
+					SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, NameType_check, bCreateCharacter, JsonString_CA, AddrInfo);
 					// Print.
 					UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CreateCharacterResponses], db-server-CreateCharacter."));
 				}
