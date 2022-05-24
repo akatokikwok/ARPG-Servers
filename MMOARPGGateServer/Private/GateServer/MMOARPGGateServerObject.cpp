@@ -82,15 +82,16 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 		case SP_CreateCharacterRequests :// 来自 UUI_RenameCreate::ClickedCreate_callback()
 		{
 			int32 PlayerID = INDEX_NONE;// 玩家ID.
-			FString JsonString;
+			FString JsonString_CA;// UUI_HallMain::CreateCharacter里的CA存档压缩成的Json.
+
 			// 读一下收到的来自客户端请求的 玩家ID
-			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, PlayerID, JsonString);
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, PlayerID, JsonString_CA);
 
 			// 拿到本网关地址并转发数据至 db端. dbClient端会做一个接收.
 			FSimpleAddrInfo AddrInfo;
 			GetRemoteAddrInfo(AddrInfo);
-			SIMPLE_CLIENT_SEND(dbClient, SP_CreateCharacterRequests, PlayerID, JsonString, AddrInfo);
-
+			SIMPLE_CLIENT_SEND(dbClient, SP_CreateCharacterRequests, PlayerID, JsonString_CA, AddrInfo);
+			// Print.
 			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CreateCharacterRequests] UserID = %i"), PlayerID);
 			break;
 		}

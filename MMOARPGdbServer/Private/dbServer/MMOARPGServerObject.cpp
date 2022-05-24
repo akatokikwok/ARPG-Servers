@@ -45,6 +45,7 @@ void UMMOARPGServerObejct::Init()
 		`id` INT UNSIGNED AUTO_INCREMENT,\
 		`mmoarpg_name` VARCHAR(100) NOT NULL,\
 		`mmoarpg_date` VARCHAR(100) NOT NULL,\
+		`mmoarpg_slot` INT,\
 		PRIMARY KEY(`id`)\
 		) ENGINE = INNODB DEFAULT CHARSET = utf8mb4; ");
 	if (!Post(Create_mmoarpg_character_ca_SQL)) {
@@ -219,14 +220,86 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			/* 收到来自网关的数据请求. */
 			int32 UserID = INDEX_NONE;// 用户ID
 			FSimpleAddrInfo AddrInfo;// 中转作用的网关地址.
-			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, UserID, AddrInfo);
+			FString JsonString_CA;// CA存档压缩成的json.
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CreateCharacterRequests, UserID, JsonString_CA, AddrInfo);
 
 			if (UserID > 0.0f) {// ID在数据库里正常大于0.
+				// 从json里解析出恰当的CA存档.
+				FMMOARPGCharacterAppearance CA_receive;
+				NetDataAnalysis::StringToCharacterAppearances(JsonString_CA, CA_receive);
+				
+				// 处理CA存档.
+				if (CA_receive.SlotPosition != INDEX_NONE) {
+					/// 0.验证名字.
 
-				// 处理完之后 把回复 发回至 Gate-dbClient
-				SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, AddrInfo);
-				// Print.
-				UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CreateCharacterResponses], db-server-CreateCharacter."));
+					/// 1.先拿到用户数据.
+					TArray<FString> CAIDs;// 所有扫到的用户ID.
+					{
+						/** 使用SQL语句向db中 表wp_usermeta里meta_key="character_ca"的字段 . */
+						FString SQL = FString::Printf(
+							TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id=%i and meta_key=\"character_ca\";"), UserID);
+						/** 使用语句拉取db上的表数据. */
+						TArray<FSimpleMysqlResult> Result;
+						if (Get(SQL, Result) == true) {
+							if (Result.Num() > 0) {/* 说明db上存在数据源.*/
+								for (auto& Tmp : Result) {
+									if (FString* InMetaValue = Tmp.Rows.Find(TEXT("meta_value"))) {
+										InMetaValue->ParseIntoArray(CAIDs, TEXT("|"));// 把类似2|3|4这种拆出来 2 3 4,存进CAIDs.
+									}
+								}
+							}
+							else {/* 说明db上不存在名字.*/
+
+							}
+						}
+					}
+
+					/// 2.插入数据
+					{
+						FString SQL = FString::Printf(TEXT("INSERT INTO mmoarpg_characters_ca(\
+							mmoarpg_name,mmoarpg_date,mmoarpg_slot) \
+							VALUES(\"%s\",\"%s\",%i);"),
+							*CA_receive.Name, *CA_receive.Date, CA_receive.SlotPosition);
+						
+						// 向数据库提交这条插入命令如果成功.就把语句刷新为按名字查找.
+						if (Post(SQL)) {
+							SQL = FString::Printf(TEXT("SELECT id FROM mmoarpg_characters_ca WHERE mmoarpg_name=\"%s\";"), *CA_receive.Name);
+							TArray<FSimpleMysqlResult> Result;
+							if (Get(SQL, Result)) {
+								if (Result.Num() > 0) {
+									for (auto& Tmp : Result) {
+										if (FString* InIDString = Tmp.Rows.Find(TEXT("id"))) {
+											CAIDs.Add(*InIDString);
+										}
+									}
+								}
+							}
+						}
+					}
+
+					/// 3.更新元数据
+					{
+						// 之前已经拿取到完整的 CAIDs, 故下一步执行拼接字符串.
+						FString IDStirng;
+						for (auto& Tmp : CAIDs) { 
+							IDStirng += Tmp + TEXT("|"); 
+						}
+						IDStirng.RemoveFromEnd(TEXT("|"));
+
+						// 使用新语句更新.
+						FString SQL = FString::Printf(TEXT("UPDATE wp_usermeta \
+							SET meta_value=\"%s\" WHERE meta_key=\"character_ca\" and user_id=%i;"),
+							*IDStirng, UserID);
+						if (Post(SQL) == true) {
+							
+						}
+					}
+
+					// 处理完之后 把Response 发回至 Gate-dbClient
+					SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, AddrInfo);
+					// Print.
+					UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CreateCharacterResponses], db-server-CreateCharacter."));
+				}
 			}
 			break;
 		}
