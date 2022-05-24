@@ -8,6 +8,7 @@
 #include "Blueprint/SimpleMysqlObject.h"
 #include "Core/SimpleMysqlLinkType.h"
 #include "../../SimpleHTTP/Source/SimpleHTTP/Public/SimpleHTTPType.h"
+#include <MMOARPGType.h>
 #include "MMOARPGServerObject.generated.h"
 
 /** ServerObejct */
@@ -32,6 +33,10 @@ protected:
 	// 给POST操作完成后 绑定的回调.
 	UFUNCTION()
 		void Callback_CheckPasswordResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful);
+
+private:
+	/** 给定键入的名字 并核验它的检查类型. */
+	ECheckNameType CheckName(const FString& InName);
 
 protected:
 	USimpleMysqlObject* MysqlObjectRead;// 数据库对象:读

@@ -3,7 +3,6 @@
 #include "MysqlConfig.h"
 #include "Log\MMOARPGdbServerLog.h"
 #include "Protocol/LoginProtocol.h"
-#include "MMOARPGType.h"
 #include "Global/SimpleNetGlobalInfo.h"
 #include "../../SimpleHTTP/Source/SimpleHTTP/Public/SimpleHTTPManage.h"
 #include "Protocol/HallProtocol.h"
@@ -153,18 +152,59 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			int32 UserID = INDEX_NONE;
 			FSimpleAddrInfo AddrInfo;// 需要那个接收数据源的网关服务器地址.
 			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, UserID, AddrInfo);
-// 			UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CharacterAppearanceResponses], db 收到了捏脸玩家形象请求."));
 
-			if (UserID > 0.0f) {// ID在数据库里正常大于0.
-				// 关联玩家形象的数据库数据,目前先写死,作假.
-				FCharacterAppearances CharacterAppearances;
-				CharacterAppearances.Add(FMMOARPGCharacterAppearance());
-				FMMOARPGCharacterAppearance& InLastAppear = CharacterAppearances.Last();
-				InLastAppear.Lv = 14;
-				InLastAppear.Date = FDateTime::Now().ToString();// 真实世界的时间点.
-				InLastAppear.Name = TEXT("之钠波");
-				InLastAppear.SlotPosition = 1;// 这份CA存档 槽号暂设定为1.
+			/**  */
+			if (UserID > 0.0f) {
+				FCharacterAppearances CharacterAppearances;// CA存档集.
+				FString IDs;// 待加工的角色ID集, 表现出如类似1,2,3,4的形式.
+
+				/// 拿到元数据.
+				{
+					FString SQL = FString::Printf(TEXT("SELECT meta_value from wp_usermeta where user_id=%i and meta_key=\"character_ca\";"), UserID);// 查找语句.
+					TArray<FSimpleMysqlResult> Result;
+					if (Get(SQL, Result)) {
+						if (Result.Num() > 0) {
+							for (auto& Tmp_row : Result) {// 单行.
+								if (FString* InMetaValue = Tmp_row.Rows.Find(TEXT("meta_value"))) {// 找到表wp_usermeta里指定ID的 元数据
+									TArray<FString> Arrays_temp;
+									InMetaValue->ParseIntoArray(Arrays_temp, TEXT("|"));// 拆解携带|号的字符串
+									for (auto& TmpID : Arrays_temp) {
+										IDs += TmpID + TEXT(",");// 拼接成新的字符串.
+									}
+									IDs.RemoveFromEnd(TEXT(","));
+								}
+							}
+						}
+					}
+				}
 				
+				/// 拿到我们的角色数据.
+				if (!IDs.IsEmpty())
+				{
+					// 从表mmoarpg_characters_ca查找id属于IDs的所有行.
+					FString SQL = FString::Printf(TEXT("SELECT * from mmoarpg_characters_ca where id in (%s);"), *IDs);
+					// 
+					TArray<FSimpleMysqlResult> Result;
+					if (Get(SQL, Result)) {
+						if (Result.Num() > 0) {
+							for (auto& Tmp : Result) {// 每一行.
+								
+								/* 对 新增存档各属性部分执行设置. */
+								CharacterAppearances.Add(FMMOARPGCharacterAppearance());
+								FMMOARPGCharacterAppearance& InLast = CharacterAppearances.Last();
+								if (FString* InName = Tmp.Rows.Find(TEXT("mmoarpg_name"))) {
+									InLast.Name = *InName;
+								}
+								if (FString* InDate = Tmp.Rows.Find(TEXT("mmoarpg_date"))) {
+									InLast.Date = *InDate;
+								}
+								if (FString* InSlot = Tmp.Rows.Find(TEXT("mmoarpg_slot"))) {
+									InLast.SlotPosition = FCString::Atoi(**InSlot);
+								}
+							}
+						}
+					}
+				}
 
 				// 把数据源压缩成JSON
 				FString JsonString;
@@ -186,25 +226,10 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			FSimpleAddrInfo AddrInfo;// 中转作用的网关地址.
 			SIMPLE_PROTOCOLS_RECEIVE(SP_CheckCharacterNameRequests, UserID, CharacterName, AddrInfo);// 收到来自网关的数据请求.
 
+			/* 核验键入的名字. */
 			ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
 			if (UserID > 0.0f) {// ID在数据库里正常大于0.
-				/** 使用SQL语句向db查询这个键入的待核验名字. */
-				FString SQL = FString::Printf(
-					TEXT("SELECT id FROM mmoarpg_characters_ca WHERE mmoarpg_name = \"%s\";"), *CharacterName);
-				
-				/** 使用语句拉取db上的表数据. */
-				TArray<FSimpleMysqlResult> Result;
-				if (Get(SQL, Result) == true) { 
-					if (Result.Num() > 0) {/* 说明db上存在名字.*/
-						CheckNameType = ECheckNameType::NAME_EXIST;
-					}
-					else {/* 说明db上不存在名字.*/
-						CheckNameType = ECheckNameType::NAME_NOT_EXIST;
-					}
-				}
-				else {/* 说明服务器出问题.*/
-					CheckNameType = ECheckNameType::SERVER_NOT_EXIST;
-				}
+				CheckNameType = CheckName(CharacterName);
 			}
 
 			// 处理完之后 把回复 发回至 Gate-dbClient
@@ -215,7 +240,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 		}
 
 		/** 创建一个舞台角色的请求.*/
-		case SP_CreateCharacterRequests : 
+		case SP_CreateCharacterRequests:
 		{
 			/* 收到来自网关的数据请求. */
 			int32 UserID = INDEX_NONE;// 用户ID
@@ -227,76 +252,83 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 				// 从json里解析出恰当的CA存档.
 				FMMOARPGCharacterAppearance CA_receive;
 				NetDataAnalysis::StringToCharacterAppearances(JsonString_CA, CA_receive);
-				
+
 				// 处理CA存档.
 				if (CA_receive.SlotPosition != INDEX_NONE) {
-					/// 0.验证名字.
 
-					/// 1.先拿到用户数据.
-					TArray<FString> CAIDs;// 所有扫到的用户ID.
-					{
-						/** 使用SQL语句向db中 表wp_usermeta里meta_key="character_ca"的字段 . */
-						FString SQL = FString::Printf(
-							TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id=%i and meta_key=\"character_ca\";"), UserID);
-						/** 使用语句拉取db上的表数据. */
-						TArray<FSimpleMysqlResult> Result;
-						if (Get(SQL, Result) == true) {
-							if (Result.Num() > 0) {/* 说明db上存在数据源.*/
-								for (auto& Tmp : Result) {
-									if (FString* InMetaValue = Tmp.Rows.Find(TEXT("meta_value"))) {
-										InMetaValue->ParseIntoArray(CAIDs, TEXT("|"));// 把类似2|3|4这种拆出来 2 3 4,存进CAIDs.
+					/// 0.核验键入的名字并返回1个检查结果.
+					ECheckNameType NameType_check = CheckName(CA_receive.Name);
+
+					/// 当且仅当 核验类型为新增的名字,原本数据库里不存在的.
+					if (NameType_check == ECheckNameType::NAME_NOT_EXIST) {
+						TArray<FString> CAIDs;// 所有扫到的用户ID.
+
+						/// 1.先拿到用户数据.
+						{
+							/** 使用SQL语句向db中 表wp_usermeta里meta_key="character_ca"的字段 . */
+							FString SQL = FString::Printf(
+								TEXT("SELECT meta_value FROM wp_usermeta WHERE user_id=%i and meta_key=\"character_ca\";"), UserID);
+							/** 使用语句拉取db上的表数据. */
+							TArray<FSimpleMysqlResult> Result;
+							if (Get(SQL, Result) == true) {
+								if (Result.Num() > 0) {/* 说明db上存在数据源.*/
+									for (auto& Tmp : Result) {
+										if (FString* InMetaValue = Tmp.Rows.Find(TEXT("meta_value"))) {
+											InMetaValue->ParseIntoArray(CAIDs, TEXT("|"));// 把类似2|3|4这种拆出来 2 3 4,存进CAIDs.
+										}
 									}
 								}
-							}
-							else {/* 说明db上不存在名字.*/
+								else {/* 说明db上不存在名字.*/
 
+								}
 							}
 						}
-					}
 
-					/// 2.插入数据
-					{
-						FString SQL = FString::Printf(TEXT("INSERT INTO mmoarpg_characters_ca(\
+						/// 2.插入数据
+						{
+							FString SQL = FString::Printf(TEXT("INSERT INTO mmoarpg_characters_ca(\
 							mmoarpg_name,mmoarpg_date,mmoarpg_slot) \
 							VALUES(\"%s\",\"%s\",%i);"),
-							*CA_receive.Name, *CA_receive.Date, CA_receive.SlotPosition);
-						
-						// 向数据库提交这条插入命令如果成功.就把语句刷新为按名字查找.
-						if (Post(SQL)) {
-							SQL = FString::Printf(TEXT("SELECT id FROM mmoarpg_characters_ca WHERE mmoarpg_name=\"%s\";"), *CA_receive.Name);
-							TArray<FSimpleMysqlResult> Result;
-							if (Get(SQL, Result)) {
-								if (Result.Num() > 0) {
-									for (auto& Tmp : Result) {
-										if (FString* InIDString = Tmp.Rows.Find(TEXT("id"))) {
-											CAIDs.Add(*InIDString);
+								*CA_receive.Name, *CA_receive.Date, CA_receive.SlotPosition);
+
+							// 向数据库提交这条插入命令如果成功.就把语句刷新为按名字查找.
+							if (Post(SQL)) {
+								SQL = FString::Printf(TEXT("SELECT id FROM mmoarpg_characters_ca WHERE mmoarpg_name=\"%s\";"), *CA_receive.Name);
+								TArray<FSimpleMysqlResult> Result;
+								if (Get(SQL, Result)) {
+									if (Result.Num() > 0) {
+										for (auto& Tmp : Result) {
+											if (FString* InIDString = Tmp.Rows.Find(TEXT("id"))) {
+												CAIDs.Add(*InIDString);
+											}
 										}
 									}
 								}
 							}
 						}
-					}
 
-					/// 3.更新元数据
-					{
-						// 之前已经拿取到完整的 CAIDs, 故下一步执行拼接字符串.
-						FString IDStirng;
-						for (auto& Tmp : CAIDs) { 
-							IDStirng += Tmp + TEXT("|"); 
-						}
-						IDStirng.RemoveFromEnd(TEXT("|"));
+						/// 3.更新元数据
+						{
+							// 之前已经拿取到完整的 CAIDs, 故下一步执行拼接字符串.
+							FString IDStirng;
+							for (auto& Tmp : CAIDs) {
+								IDStirng += Tmp + TEXT("|");
+							}
+							IDStirng.RemoveFromEnd(TEXT("|"));
 
-						// 使用新语句更新.
-						FString SQL = FString::Printf(TEXT("UPDATE wp_usermeta \
+							// 使用新语句更新.
+							FString SQL = FString::Printf(TEXT("UPDATE wp_usermeta \
 							SET meta_value=\"%s\" WHERE meta_key=\"character_ca\" and user_id=%i;"),
-							*IDStirng, UserID);
-						if (Post(SQL) == true) {
-							
+								*IDStirng, UserID);
+							if (Post(SQL) == true) {
+
+							}
 						}
+
 					}
 
 					// 处理完之后 把Response 发回至 Gate-dbClient
-					SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, AddrInfo);
+					SIMPLE_PROTOCOLS_SEND(SP_CreateCharacterResponses, NameType_check, AddrInfo);
 					// Print.
 					UE_LOG(LogMMOARPGdbServer, Display, TEXT("[SP_CreateCharacterResponses], db-server-CreateCharacter."));
 				}
@@ -434,4 +466,28 @@ void UMMOARPGServerObejct::Callback_CheckPasswordResult(const FSimpleHttpRequest
 			}
 		}
 	}
+}
+
+/** 给定键入的名字 并核验它的检查类型. */
+ECheckNameType UMMOARPGServerObejct::CheckName(const FString& InName)
+{
+	ECheckNameType CheckNameType = ECheckNameType::UNKNOWN_ERROR;
+	if (!InName.IsEmpty()) {
+		/** 使用SQL语句向db查询这个键入的待核验名字. */
+		FString SQL = FString::Printf(TEXT("SELECT id FROM mmoarpg_characters_ca WHERE mmoarpg_name = \"%s\";"), *InName);
+		/** 使用语句拉取db上的表数据. */
+		TArray<FSimpleMysqlResult> Result;
+		if (Get(SQL, Result)) {
+			if (Result.Num() > 0) {/* 说明db上存在名字.*/
+				CheckNameType = ECheckNameType::NAME_EXIST;
+			}
+			else {/* 说明db上不存在名字.*/
+				CheckNameType = ECheckNameType::NAME_NOT_EXIST;
+			}
+		}
+		else {/* 说明服务器出问题.*/
+			CheckNameType = ECheckNameType::SERVER_NOT_EXIST;
+		}
+	}
+	return CheckNameType;
 }
