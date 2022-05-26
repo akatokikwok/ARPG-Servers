@@ -45,6 +45,9 @@ void UMMOARPGServerObejct::Init()
 		`mmoarpg_name` VARCHAR(100) NOT NULL,\
 		`mmoarpg_date` VARCHAR(100) NOT NULL,\
 		`mmoarpg_slot` INT,\
+		`Leg_Size` double(11,4) DEFAULT '0.00',\
+		`Waist_Size` double(11,4) DEFAULT '0.00',\
+		`Arm_Size` double(11,4) DEFAULT '0.00',\
 		PRIMARY KEY(`id`)\
 		) ENGINE = INNODB DEFAULT CHARSET = utf8mb4; ");
 	if (!Post(Create_mmoarpg_character_ca_SQL)) {
@@ -200,6 +203,17 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 								if (FString* InSlot = Tmp.Rows.Find(TEXT("mmoarpg_slot"))) {
 									InLast.SlotPosition = FCString::Atoi(**InSlot);
 								}
+
+								/* 舞台人物身材外观.*/
+								if (FString* InLegSize = Tmp.Rows.Find(TEXT("leg_Size"))) {
+									InLast.LegSize = FCString::Atof(**InLegSize);
+								}
+								if (FString* InWaistSize = Tmp.Rows.Find(TEXT("waist_size"))) {
+									InLast.WaistSize = FCString::Atof(**InWaistSize);
+								}
+								if (FString* InArmSize = Tmp.Rows.Find(TEXT("arm_size"))) {
+									InLast.ArmSize = FCString::Atof(**InArmSize);
+								}
 							}
 						}
 					}
@@ -289,9 +303,10 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 						if (bCreateCharacter == true)/* 仅当有创建信号. */
 						{
 							FString SQL = FString::Printf(TEXT("INSERT INTO mmoarpg_characters_ca(\
-								mmoarpg_name,mmoarpg_date,mmoarpg_slot) \
-								VALUES(\"%s\",\"%s\",%i);"),
-								*CA_receive.Name, *CA_receive.Date, CA_receive.SlotPosition);
+								mmoarpg_name,mmoarpg_date,mmoarpg_slot,leg_size,waist_size,arm_size) \
+								VALUES(\"%s\",\"%s\",%i,%.2lf,%.2lf,%.2lf);"),// 使用长浮点型,增大带宽.
+								*CA_receive.Name, *CA_receive.Date, CA_receive.SlotPosition,
+								CA_receive.LegSize, CA_receive.WaistSize, CA_receive.ArmSize);
 
 							// 向数据库提交这条插入命令如果成功.就把语句刷新为按名字查找.
 							if (Post(SQL)) {
