@@ -9,6 +9,7 @@
 #include "RequiredProgramMainCPPInclude.h"
 #include "GateServer/MMOARPGGateServerObject.h"
 #include "GateServer/MMOARPGdbClientObject.h"
+#include "GateServer/MMOARPGCenterClientObject.h"
 
 
 IMPLEMENT_APPLICATION(MMOARPGGateServer, "MMOARPGGateServer");
@@ -24,10 +25,12 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 	//II 创建服务器实例
 	GateServer = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_TCP);
 	dbClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_TCP);
+	CenterClient = FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_CONNET, ESimpleSocketType::SIMPLESOCKETTYPE_TCP);
 
 	//III 注册反射类
 	GateServer->NetworkObjectClass = UMMOARPGGateServerObject::StaticClass();
 	dbClient->NetworkObjectClass = UMMOARPGdbClientObject::StaticClass();
+	CenterClient->NetworkObjectClass = UMMOARPGCenterClientObject::StaticClass();
 
 	//IV 初始化
 	if (!GateServer->Init()) {
@@ -39,6 +42,12 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 	if (!dbClient->Init(11221)) {
 		delete dbClient;
 		UE_LOG(LogMMOARPGGateServer, Error, TEXT("dbClient Init fail."));
+		return INDEX_NONE;
+	}
+
+	if (!CenterClient->Init(11231)) {
+		delete CenterClient;
+		UE_LOG(LogMMOARPGGateServer, Error, TEXT("CenterClient Init fail."));
 		return INDEX_NONE;
 	}
 
@@ -55,12 +64,15 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 		//每帧检查链接
 		GateServer->Tick(DeltaSenconds);
 		dbClient->Tick(DeltaSenconds);
+		CenterClient->Tick(DeltaSenconds);
 
 		LastTime = Now;
 	}
 
 	FSimpleNetManage::Destroy(dbClient);
 	FSimpleNetManage::Destroy(GateServer);
+	FSimpleNetManage::Destroy(CenterClient);
+
 	FEngineLoop::AppExit();
 
 	return 0;

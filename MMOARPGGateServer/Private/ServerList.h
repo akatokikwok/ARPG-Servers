@@ -10,5 +10,6 @@
  * 一些重要服务器.
  */
 
-FSimpleNetManage* GateServer;
-FSimpleNetManage* dbClient;
+FSimpleNetManage* GateServer;// 网关服务器.
+FSimpleNetManage* dbClient;// 数据库客户端-Gate.
+FSimpleNetManage* CenterClient;// 中心客户端-Gate.

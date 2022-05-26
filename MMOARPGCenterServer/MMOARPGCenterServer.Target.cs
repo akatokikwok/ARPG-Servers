@@ -1,16 +1,16 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (C) RenZhai.2020.All Rights Reserved.
 
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-[SupportedPlatforms(UnrealPlatformClass.All)]
-public class MMOARPGdbServerTarget : TargetRules
+[SupportedPlatforms(UnrealPlatformClass.Desktop)]
+public class MMOARPGCenterServerTarget : TargetRules
 {
-	public MMOARPGdbServerTarget(TargetInfo Target) : base(Target)
+	public MMOARPGCenterServerTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Program;
 		LinkType = TargetLinkType.Monolithic;
-		LaunchModuleName = "MMOARPGdbServer";
+		LaunchModuleName = "MMOARPGCenterServer";
 
 		// Lean and mean
 		bBuildDeveloperTools = false;
@@ -19,8 +19,8 @@ public class MMOARPGdbServerTarget : TargetRules
 		// automatically by Unreal Build Tool, but if bUseMallocProfiler is defined, UHT can operate incorrectly.
 		bUseMallocProfiler = false;
 
-		// Editor-only is enabled for desktop platforms to run unit tests that depend on editor-only data
-		// It's disabled in test and shipping configs to make profiling similar to the game
+		// Editor-only data, however, is needed
+
 		bool bDebugOrDevelopment = Target.Configuration == UnrealTargetConfiguration.Debug || Target.Configuration == UnrealTargetConfiguration.Development;
 		bBuildWithEditorOnlyData = Target.Platform.IsInGroup(UnrealPlatformGroup.Desktop) && bDebugOrDevelopment;
 
@@ -28,8 +28,7 @@ public class MMOARPGdbServerTarget : TargetRules
 		bCompileAgainstEngine = false;
 		bCompileAgainstCoreUObject = true;    // 记得打开,强迫UObject支持反射
 		bCompileAgainstApplicationCore = true;// 记得打开,使支持编译 应用
-		bCompileICU = false;
-
+// 		bCompileICU = false;
 		// UnrealHeaderTool is a console application, not a Windows app (sets entry point to main(), instead of WinMain())
 		bIsBuildingConsoleApplication = true;
 	}
