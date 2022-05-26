@@ -95,5 +95,22 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_CreateCharacterRequests] UserID = %i"), PlayerID);
 			break;
 		}
+
+		/** 删除CA存档. */
+		case SP_DeleteCharacterRequests:
+		{
+			int32 PlayerID = INDEX_NONE;
+			int32 SlotID = INDEX_NONE;
+
+			//拿到客户端发送的账号
+			SIMPLE_PROTOCOLS_RECEIVE(SP_DeleteCharacterRequests, PlayerID, SlotID);
+
+			FSimpleAddrInfo AddrInfo;
+			GetRemoteAddrInfo(AddrInfo);
+			SIMPLE_CLIENT_SEND(dbClient, SP_DeleteCharacterRequests, PlayerID, SlotID, AddrInfo);
+
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_DeleteCharacterRequests] UserID = %i SlotID=%i"), PlayerID, SlotID);
+			break;
+		}
 	}
 }
