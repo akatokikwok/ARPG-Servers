@@ -367,6 +367,88 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			}
 			break;
 		}
+
+		/** 移除角色存档 */
+		case SP_DeleteCharacterRequests:
+		{
+			// 拿到HallMain发过来的 用户ID、要删除的槽号.
+			int32 UserID = INDEX_NONE;
+			FSimpleAddrInfo AddrInfo;
+			int32 SlotID = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_DeleteCharacterRequests, UserID, SlotID, AddrInfo);
+
+			if (UserID != INDEX_NONE && SlotID != INDEX_NONE) {
+				//I 获取元数据
+				FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE meta_key=\"character_ca\" and User_id=%i;"), UserID);
+				TArray<FSimpleMysqlResult> Result;
+				FString IDs;
+				if (Get(SQL, Result)) {
+					if (Result.Num() > 0) {
+						// 用字符串拼接 把元数据表里的诸如 38|39|40 替换为 38,39,40; 这些ID号指向者玩家存档数据表.
+						for (auto& Tmp : Result) {
+							if (FString* InMetaValue = Tmp.Rows.Find(TEXT("meta_value"))) {
+								IDs = InMetaValue->Replace(TEXT("|"), TEXT(","));
+							}
+						}
+					}
+				}
+
+				//II 获取准备移除的数据ID
+				int32 SuccessDeleteCount = 0;
+
+				SQL = FString::Printf(TEXT("SELECT id FROM mmoarpg_characters_ca WHERE id in (%s) and mmoarpg_slot=%i;"),
+					*IDs, SlotID);
+
+				FString RemoveID;
+				Result.Empty();
+				if (Get(SQL, Result)) {
+					if (Result.Num() > 0) {
+						for (auto& Tmp : Result) {
+							if (FString* InIDValue = Tmp.Rows.Find(TEXT("id"))) {
+								RemoveID = *InIDValue;
+								SuccessDeleteCount++;
+							}
+						}
+					}
+				}
+
+				//III 删除Slot对应的对象
+				if (!IDs.IsEmpty()) {
+					SQL = FString::Printf(TEXT("DELETE FROM mmoarpg_characters_ca WHERE ID in (%s) and mmoarpg_slot=%i;"), *IDs, SlotID);
+					if (Post(SQL)) {
+						SuccessDeleteCount++;// 成功删除的计数加一.
+					}
+				}
+
+				//V 删除执行成功后还需要去 更新元数据表
+				if (SuccessDeleteCount > 1) {
+					TArray<FString> IDArray;
+					IDs.ParseIntoArray(IDArray, TEXT(","));//  拆解诸如38,39,40提出三个数字.
+
+					// 真正的从所有ID里 移除符合条件的ID.
+					IDArray.Remove(RemoveID);
+
+					// 再把所有ID重新拼接一次,拼接成符合诸如 38|39|40的形式, 重新添加至元数据表.
+					IDs.Empty();
+					for (auto& Tmp : IDArray) {
+						IDs += (Tmp + TEXT("|"));
+					}
+					IDs.RemoveFromEnd("|");
+
+					SQL = FString::Printf(TEXT("UPDATE wp_usermeta \
+							SET meta_value=\"%s\" WHERE meta_key=\"character_ca\" and user_id=%i;"),
+						*IDs, UserID);
+
+					if (Post(SQL)) {
+						SuccessDeleteCount++;
+					}
+				}
+
+				SIMPLE_PROTOCOLS_SEND(SP_DeleteCharacterResponses, UserID, SlotID, SuccessDeleteCount, AddrInfo);
+			}
+			break;
+		}
+
 	}
 }
 
