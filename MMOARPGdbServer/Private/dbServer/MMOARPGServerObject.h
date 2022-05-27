@@ -32,11 +32,23 @@ public:
 protected:
 	// 给POST操作完成后 绑定的回调.
 	UFUNCTION()
-		void Callback_CheckPasswordResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful);
+		void CheckPasswordResult_callback(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful);
 
 private:
 	/** 给定键入的名字 并核验它的检查类型. */
 	ECheckNameType CheckName(const FString& InName);
+
+	// 将指定ID的用户信息注入JSon.
+	bool GetUserInfo(int32 InUserID, FString& OutJsonString);
+
+	// 将指定ID的Slot信息注入JSon.
+	bool GetSlotCAInfo(int32 InUserID, int32 InSlotCAID, FString& OutJsonString);
+
+	// 拆解出指定用户ID的 关联元数据 character_ca这个字段里存储的所有ID.
+	bool GetCharacterCAInfoByUserMeta(int32 InUserID, TArray<FString>& OutIDs);
+
+	// 将字符集输出成满足 s1, s2, s3, s4的形式.
+	void GetSerialString(TCHAR* InSplitPrefix, const TArray<FString>& InStrings, FString& OutString);
 
 protected:
 	USimpleMysqlObject* MysqlObjectRead;// 数据库对象:读

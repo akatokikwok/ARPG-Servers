@@ -123,7 +123,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 
 							/** Post 操作.*/
 							FSimpleHTTPResponseDelegate Delegate;
-							Delegate.SimpleCompleteDelegate.BindUObject(this, &UMMOARPGServerObejct::Callback_CheckPasswordResult);
+							Delegate.SimpleCompleteDelegate.BindUObject(this, &UMMOARPGServerObejct::CheckPasswordResult_callback);
 							// 借助全局配置表. 获取公网IP.即载有db的那台机器wordpress的 192.168.2.30
 							FString WpIP = FSimpleNetGlobalInfo::Get()->GetInfo().PublicIP;
 							//
@@ -164,21 +164,9 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 
 				/// 拿到元数据.
 				{
-					FString SQL = FString::Printf(TEXT("SELECT meta_value from wp_usermeta where user_id=%i and meta_key=\"character_ca\";"), UserID);// 查找语句.
-					TArray<FSimpleMysqlResult> Result;
-					if (Get(SQL, Result)) {
-						if (Result.Num() > 0) {
-							for (auto& Tmp_row : Result) {// 单行.
-								if (FString* InMetaValue = Tmp_row.Rows.Find(TEXT("meta_value"))) {// 找到表wp_usermeta里指定ID的 元数据
-									TArray<FString> Arrays_temp;
-									InMetaValue->ParseIntoArray(Arrays_temp, TEXT("|"));// 拆解携带|号的字符串
-									for (auto& TmpID : Arrays_temp) {
-										IDs += TmpID + TEXT(",");// 拼接成新的字符串.
-									}
-									IDs.RemoveFromEnd(TEXT(","));
-								}
-							}
-						}
+					TArray<FString> OutIDs;
+					if (GetCharacterCAInfoByUserMeta(UserID, OutIDs) == true) {// 拆解出UserID的所有元数据的ID集.
+						GetSerialString(TEXT(","), OutIDs, IDs);
 					}
 				}
 
@@ -461,18 +449,18 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerRegistInfoRequests, UserID, SlotID, GateAddrInfo, CenterAddrInfo);
 
 			//
-			if (UserID != INDEX_NONE && SlotID != INDEX_NONE)
-			{
-// 				FString UserInfoJson;
-// 				FString SlotInfoJson;
-// 				if (GetUserInfo(UserID, UserInfoJson) && GetSlotCAInfo(UserID, SlotID, SlotInfoJson)) {
-// 					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotInfoJson, GateAddrInfo, CenterAddrInfo);
-// 				}
-// 				else {
-// 					UserInfoJson = TEXT("[]");
-// 					SlotInfoJson = TEXT("[]");
-// 					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotInfoJson, GateAddrInfo, CenterAddrInfo);
-// 				}
+			if (UserID != INDEX_NONE && SlotID != INDEX_NONE) {
+				FString UserInfoJson;
+				FString SlotCAInfoJson;
+				if (GetUserInfo(UserID, UserInfoJson) && GetSlotCAInfo(UserID, SlotID, SlotCAInfoJson)) {// 两份Json都注入成功.
+
+					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotCAInfoJson, GateAddrInfo, CenterAddrInfo);// 把处理后的用户信息JSON发出去.
+				}
+				else {// 两份JSON只要有一个注入失败.
+					UserInfoJson = TEXT("[]");
+					SlotCAInfoJson = TEXT("[]");
+					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotCAInfoJson, GateAddrInfo, CenterAddrInfo);// 把处理后的用户信息JSON发出去.
+				}
 			}
 		}
 	}
@@ -527,7 +515,7 @@ bool UMMOARPGServerObejct::Get(const FString& InSQL, TArray<FSimpleMysqlResult>&
 	return false;
 }
 
-void UMMOARPGServerObejct::Callback_CheckPasswordResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful)
+void UMMOARPGServerObejct::CheckPasswordResult_callback(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful)
 {
 	/* 开始解析数据*/
 	if (bLinkSuccessful == true) {
@@ -560,42 +548,11 @@ void UMMOARPGServerObejct::Callback_CheckPasswordResult(const FSimpleHttpRequest
 			/* 追加判断PV成功.*/
 			if (PV == VERIFICATION_SUCCESS) {
 				if (UserID != 0) {// 不为0才有意义.
-					// 设定一条检索的SQL语句.
-					FMMOARPGUserData UserData;// 构建一个用户数据.
-					UserData.ID = UserID;// 填值.
-					FString SQL = FString::Printf(TEXT("SELECT user_login,user_email,user_url,display_name FROM wp_users WHERE ID=%i;"), UserID);// SQL查找语句.
-
-					TArray<FSimpleMysqlResult> Result;
-					if (Get(SQL, Result)) { /* 从dbServer上拉数据.*/
-						if (Result.Num() > 0) {
-
-							for (auto& Tmp : Result) {
-								//
-								if (FString* InUserLogin = Tmp.Rows.Find(TEXT("user_login"))) {
-									UserData.Account = *InUserLogin;
-								}
-								//
-								if (FString* InUserEmail = Tmp.Rows.Find(TEXT("user_email"))) {
-									UserData.EMail = *InUserEmail;
-								}
-								// 								//
-								// 								if (FString* InUserUrl = Tmp.Rows.Find(TEXT("user_url"))) {
-								// 
-								// 								}
-																//
-								if (FString* InDisplayName = Tmp.Rows.Find(TEXT("display_name"))) {
-									UserData.Name = *InDisplayName;
-								}
-							}
-						}
+					if (GetUserInfo(UserID, String) == true) {// 将指定用户ID的用户信息注入Json
+						// 回复给客户端,通知解析成功.
+						ELoginType Type = ELoginType::LOGIN_SUCCESS;
+						SIMPLE_PROTOCOLS_SEND(SP_LoginResponses, AddrInfo, Type, String);
 					}
-
-					// 把有值的UserData 写入并暂存序列化为Json的格式.
-					NetDataAnalysis::UserDataToString(UserData, String);
-
-					// 回复给客户端,通知解析成功.
-					ELoginType Type = ELoginType::LOGIN_SUCCESS;
-					SIMPLE_PROTOCOLS_SEND(SP_LoginResponses, AddrInfo, Type, String);
 				}
 			}
 			/* 追加判断PV失败*/
@@ -630,4 +587,111 @@ ECheckNameType UMMOARPGServerObejct::CheckName(const FString& InName)
 		}
 	}
 	return CheckNameType;
+}
+
+/** 将指定ID的用户信息注入JSon */
+bool UMMOARPGServerObejct::GetUserInfo(int32 InUserID, FString& OutJsonString)
+{
+	FMMOARPGUserData UserData;
+	UserData.ID = InUserID;
+
+	FString SQL = FString::Printf(TEXT("SELECT user_login,user_email,user_url,display_name FROM wp_users WHERE ID=%i;"), InUserID);
+	TArray<FSimpleMysqlResult> Result;
+	if (Get(SQL, Result)) {
+		if (Result.Num() > 0) {
+			for (auto& Tmp : Result) {
+				if (FString* InUserLogin = Tmp.Rows.Find(TEXT("user_login"))) {
+					UserData.Account = *InUserLogin;
+				}
+				if (FString* InUserEmail = Tmp.Rows.Find(TEXT("user_email"))) {
+					UserData.EMail = *InUserEmail;
+				}
+				//if (FString* InUserUrl = Tmp.Rows.Find(TEXT("user_url")))
+				//{
+				//	UserData.EMail = *InUserEmail;
+				//}
+				if (FString* InDisplayName = Tmp.Rows.Find(TEXT("display_name"))) {
+					UserData.Name = *InDisplayName;
+				}
+			}
+		}
+	}
+
+	// 用户数据写入Json
+	NetDataAnalysis::UserDataToString(UserData, OutJsonString);
+
+	return OutJsonString.Len() > 0;
+}
+
+/** 将指定ID的Slot信息注入JSon */
+bool UMMOARPGServerObejct::GetSlotCAInfo(int32 InUserID, int32 InSlotCAID, FString& OutJsonString)
+{
+	TArray<FString> IDs;
+	if (GetCharacterCAInfoByUserMeta(InUserID, IDs) == true) {// 拆解出指定用户ID的 关联元数据 character_ca这个字段里存储的所有ID.
+		FString IDString;// 是所有ID集
+		GetSerialString(TEXT(","), IDs, IDString);// 将字符集输出成满足 s1, s2, s3, s4的形式.
+
+		FString SQL = FString::Printf(TEXT("SELECT * from mmoarpg_characters_ca where id in(%s) and mmoarpg_slot=%i;"), *IDString, InSlotCAID);
+		TArray<FSimpleMysqlResult> Result;
+		if (Get(SQL, Result)) {
+			if (Result.Num() > 0) {
+				FMMOARPGCharacterAppearance CA;
+				for (auto& Tmp : Result) {
+					if (FString* InName = Tmp.Rows.Find(TEXT("mmoarpg_name"))) {
+						CA.Name = *InName;
+					}
+					if (FString* InDate = Tmp.Rows.Find(TEXT("mmoarpg_date"))) {
+						CA.Date = *InDate;
+					}
+					if (FString* InSlot = Tmp.Rows.Find(TEXT("mmoarpg_slot"))) {
+						CA.SlotPosition = FCString::Atoi(**InSlot);
+					}
+					if (FString* InLegSize = Tmp.Rows.Find(TEXT("leg_Size"))) {
+						CA.LegSize = FCString::Atof(**InLegSize);
+					}
+					if (FString* InWaistSize = Tmp.Rows.Find(TEXT("waist_size"))) {
+						CA.WaistSize = FCString::Atof(**InWaistSize);
+					}
+					if (FString* InArmSize = Tmp.Rows.Find(TEXT("arm_size"))) {
+						CA.ArmSize = FCString::Atof(**InArmSize);
+					}
+				}
+				// 把CA存档压缩成Json包.
+				NetDataAnalysis::CharacterAppearancesToString(CA, OutJsonString);
+
+				return !OutJsonString.IsEmpty();
+			}
+		}
+	}
+
+	return false;
+}
+
+/** 拆解出指定用户ID的 关联元数据 character_ca这个字段里存储的所有ID. */
+bool UMMOARPGServerObejct::GetCharacterCAInfoByUserMeta(int32 InUserID, TArray<FString>& OutIDs)
+{
+	// 先拿到元数据 character_ca这个字段里存储的所有ID.
+	FString SQL = FString::Printf(TEXT("SELECT meta_value from wp_usermeta where user_id=%i and meta_key=\"character_ca\";"), InUserID);
+	TArray<FSimpleMysqlResult> Result;
+	if (Get(SQL, Result)) {
+		if (Result.Num() > 0) {
+			for (auto& Tmp : Result) {
+				if (FString* InMetaValue = Tmp.Rows.Find(TEXT("meta_value"))) {
+					InMetaValue->ParseIntoArray(OutIDs, TEXT("|"));// 按|号拆解出来.
+				}
+			}
+		}
+		return true;
+	}
+
+	return OutIDs.Num() > 0;
+}
+
+/** 将字符集输出成满足 s1, s2, s3, s4的形式 */
+void UMMOARPGServerObejct::GetSerialString(TCHAR* InSplitPrefix, const TArray<FString>& InStrings, FString& OutString)
+{
+	for (auto& Tmp : InStrings) {
+		OutString += Tmp + InSplitPrefix;
+	}
+	OutString.RemoveFromEnd(TEXT(","));
 }

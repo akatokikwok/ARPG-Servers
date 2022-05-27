@@ -17,8 +17,10 @@ public:
 	virtual void Close();
 	virtual void RecvProtocol(uint32 InProtocol);
 	
-// 	void AddRegistInfo(const FMMOARPGPlayerRegistInfo &InRegistInfo);
-// 	bool RemoveRegistInfo(const int32 InUserID);
+	// 注册一条RI到 玩家注册表里.
+ 	void AddRegistInfo(const FMMOARPGPlayerRegistInfo &InRegistInfo);
+	// 格式化指定用户ID的 RI.
+ 	bool RemoveRegistInfo(const int32 InUserID);
 private:
-// 	TMap<int32, FMMOARPGPlayerRegistInfo> PlayerRegistInfos;
+ 	TMap<int32, FMMOARPGPlayerRegistInfo> PlayerRegistInfos;// TMap: 玩家注册信息映射表.
 };
