@@ -30,10 +30,8 @@ void UMMOARPGCenterClientObject::RecvProtocol(uint32 InProtocol)
 		case SP_LoginToDSServerResponses:
 		{
 			FString String;
-			FSimpleAddrInfo GateAddrInfo;
-			FSimpleAddr DSAddr;
-
-			//拿到客户端发送的账号
+			FSimpleAddrInfo GateAddrInfo;// 网关地址.
+			FSimpleAddr DSAddr;// DS地址.
 			SIMPLE_PROTOCOLS_RECEIVE(SP_LoginToDSServerResponses, GateAddrInfo, DSAddr);
 
 			SIMPLE_SERVER_SEND(GateServer, SP_LoginToDSServerResponses, GateAddrInfo, DSAddr);

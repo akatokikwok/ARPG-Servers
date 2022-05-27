@@ -30,28 +30,23 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 {
 	Super::RecvProtocol(InProtocol);
 
-// 	switch (InProtocol)
-// 	{
-// 		case SP_LoginToDSServerRequests:
-// 		{
-// 			int32 UserID = INDEX_NONE;
-// 			int32 SlotID = INDEX_NONE;
-// 			FSimpleAddrInfo GateAddrInfo;
-// 
-// 			SIMPLE_PROTOCOLS_RECEIVE(SP_LoginToDSServerRequests, UserID, SlotID, GateAddrInfo)
-// 
-// 			if (UserID != INDEX_NONE && SlotID != INDEX_NONE)
-// 			{
-// 				FSimpleAddrInfo CenterAddrInfo;
-// 				GetAddrInfo(CenterAddrInfo);
-// 
-// 				//发送ID和SlotID 请求数据
-// 				SIMPLE_CLIENT_SEND(dbClient, SP_PlayerRegistInfoRequests, UserID, SlotID, GateAddrInfo, CenterAddrInfo);
-// 
-// 			}
-// 
-// 			break;
-// 		}
+ 	switch (InProtocol)
+ 	{
+ 		case SP_LoginToDSServerRequests:
+ 		{
+ 			int32 UserID = INDEX_NONE;
+ 			int32 SlotID = INDEX_NONE;
+ 			FSimpleAddrInfo GateAddrInfo;
+ 			SIMPLE_PROTOCOLS_RECEIVE(SP_LoginToDSServerRequests, UserID, SlotID, GateAddrInfo)
+ 
+ 			if (UserID != INDEX_NONE && SlotID != INDEX_NONE)
+ 			{
+				FSimpleAddr Addr;
+				SIMPLE_PROTOCOLS_SEND(SP_LoginToDSServerResponses, GateAddrInfo, Addr);
+ 			}
+ 			break;
+ 		}
+
 // 		case SP_PlayerQuitRequests:
 // 		{
 // 			int32 UserID = INDEX_NONE;
@@ -69,7 +64,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 // 				}
 // 			}
 // 		}
-// 	}
+ 	}
 }
 
 // void UMMOARPGCenterServerObject::AddRegistInfo(const FMMOARPGPlayerRegistInfo& InRegistInfo)

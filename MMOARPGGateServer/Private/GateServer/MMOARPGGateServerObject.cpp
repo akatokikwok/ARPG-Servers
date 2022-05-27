@@ -100,9 +100,7 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 		case SP_DeleteCharacterRequests:
 		{
 			int32 PlayerID = INDEX_NONE;
-			int32 SlotID = INDEX_NONE;
-
-			//拿到客户端发送的账号
+			int32 SlotID = INDEX_NONE;// 是具体的哪个槽号的人物.
 			SIMPLE_PROTOCOLS_RECEIVE(SP_DeleteCharacterRequests, PlayerID, SlotID);
 
 			FSimpleAddrInfo AddrInfo;
@@ -110,6 +108,21 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_CLIENT_SEND(dbClient, SP_DeleteCharacterRequests, PlayerID, SlotID, AddrInfo);
 
 			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_DeleteCharacterRequests] UserID = %i SlotID=%i"), PlayerID, SlotID);
+			break;
+		}
+
+		/** 跳转至DS. */
+		case SP_LoginToDSServerRequests:
+		{
+			int32 PlayerID = INDEX_NONE;
+			int32 SlotID = INDEX_NONE;// 是具体的哪个槽号的人物.
+			SIMPLE_PROTOCOLS_RECEIVE(SP_LoginToDSServerRequests, PlayerID, SlotID);
+
+			FSimpleAddrInfo AddrInfo;
+			GetRemoteAddrInfo(AddrInfo);
+			SIMPLE_CLIENT_SEND(CenterClient, SP_LoginToDSServerRequests, PlayerID, SlotID, AddrInfo);
+
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_LoginToDSServerRequests] UserID = %i SlotID = %i"), PlayerID, SlotID);
 			break;
 		}
 	}
