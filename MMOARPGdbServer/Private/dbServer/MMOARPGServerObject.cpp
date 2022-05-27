@@ -6,6 +6,7 @@
 #include "Global/SimpleNetGlobalInfo.h"
 #include "../../SimpleHTTP/Source/SimpleHTTP/Public/SimpleHTTPManage.h"
 #include "Protocol/HallProtocol.h"
+#include <Protocol/ServerProtocol.h>
 
 void UMMOARPGServerObejct::Init()
 {
@@ -449,6 +450,31 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 玩家注册 */
+		case SP_PlayerRegistInfoRequests:
+		{
+			//
+			int32 UserID = INDEX_NONE;
+			int32 SlotID = INDEX_NONE;
+			FSimpleAddrInfo GateAddrInfo;
+			FSimpleAddrInfo CenterAddrInfo;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerRegistInfoRequests, UserID, SlotID, GateAddrInfo, CenterAddrInfo);
+
+			//
+			if (UserID != INDEX_NONE && SlotID != INDEX_NONE)
+			{
+// 				FString UserInfoJson;
+// 				FString SlotInfoJson;
+// 				if (GetUserInfo(UserID, UserInfoJson) && GetSlotCAInfo(UserID, SlotID, SlotInfoJson)) {
+// 					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotInfoJson, GateAddrInfo, CenterAddrInfo);
+// 				}
+// 				else {
+// 					UserInfoJson = TEXT("[]");
+// 					SlotInfoJson = TEXT("[]");
+// 					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotInfoJson, GateAddrInfo, CenterAddrInfo);
+// 				}
+			}
+		}
 	}
 }
 

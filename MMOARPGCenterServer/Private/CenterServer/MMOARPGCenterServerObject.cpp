@@ -41,8 +41,12 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
  
  			if (UserID != INDEX_NONE && SlotID != INDEX_NONE)
  			{
-				FSimpleAddr Addr;
-				SIMPLE_PROTOCOLS_SEND(SP_LoginToDSServerResponses, GateAddrInfo, Addr);
+				// 收到了来自网关的请求之后, 中心服务器向Center-db 发送注册请求.
+				SIMPLE_CLIENT_SEND(dbClient, SP_PlayerRegistInfoRequests, UserID, SlotID, GateAddrInfo);
+
+
+// 				FSimpleAddr Addr;
+// 				SIMPLE_PROTOCOLS_SEND(SP_LoginToDSServerResponses, GateAddrInfo, Addr);
  			}
  			break;
  		}

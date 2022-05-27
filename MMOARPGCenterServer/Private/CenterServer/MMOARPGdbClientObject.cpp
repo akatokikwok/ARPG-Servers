@@ -26,37 +26,17 @@ void UMMOARPGdbClientObject::Close()
 void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 {
 	Super::RecvProtocol(InProtocol);
+	
+	switch (InProtocol) {
 
-// 	switch (InProtocol)
-// 	{
-// 		case SP_PlayerRegistInfoResponses:
-// 		{	
-// 			FSimpleAddrInfo GateAddrInfo;
-// 			FSimpleAddrInfo CenterAddrInfo;
-// 
-// 			FString UserJson;
-// 			FString SlotJson;
-// 			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerRegistInfoResponses,UserJson,SlotJson, GateAddrInfo, CenterAddrInfo);
-// 
-// 			if (UserJson != TEXT("[]") && SlotJson != TEXT("[]"))
-// 			{
-// 				if (UMMOARPGCenterServerObject *InCenterServer = Cast<UMMOARPGCenterServerObject>(FSimpleNetManage::GetNetManageNetworkObject(CenterServer, CenterAddrInfo)))
-// 				{
-// 					FMMOARPGPlayerRegistInfo RI;
-// 					NetDataAnalysis::StringToCharacterAppearances(SlotJson, RI.CAInfo);
-// 					NetDataAnalysis::StringToUserData(UserJson, RI.UserInfo);
-// 
-// 					InCenterServer->AddRegistInfo(RI);
-// 
-// 					//准备ds服务器
-// 				//	FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("192.168.31.137"),7777);
-// 					FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("127.0.0.1"), 7777);
-// 					SIMPLE_SERVER_SEND(CenterServer,SP_LoginToDSServerResponses, CenterAddrInfo,GateAddrInfo, DsAddr);
-// 				}
-// 			}
-// 
-// 			break;
-// 		}
-// 	}
+		case SP_PlayerRegistInfoResponses :// 回应Center-Server的请求.
+		{
+			FSimpleAddrInfo GateAddrInfo;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerRegistInfoResponses, GateAddrInfo);
+
+			break;
+		}
+
+	}
 }
 
