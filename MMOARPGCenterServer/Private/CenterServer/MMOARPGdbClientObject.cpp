@@ -48,6 +48,10 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 					NetDataAnalysis::StringToCharacterAppearances(SlotJson, RI.CAInfo);
 					NetDataAnalysis::StringToUserData(UserJson, RI.UserInfo);
 					InCenterServer->AddRegistInfo(RI);
+
+					// 预准备DS服务器.
+					FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("192.168.2.30"), 7777);
+					SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, DsAddr);
 				}
 			}
 

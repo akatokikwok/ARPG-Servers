@@ -41,7 +41,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			if (UserID != INDEX_NONE && SlotID != INDEX_NONE) {
 
 				FSimpleAddrInfo CenterAddrInfo;// 准备1个中心服务器的地址.
-				GetLocalAddrInfo(CenterAddrInfo);
+				GetRemoteAddrInfo(CenterAddrInfo);
 
 				// 收到了来自网关的请求之后, 中心服务器向Center-dbClient 发送注册请求.
 				SIMPLE_CLIENT_SEND(dbClient, SP_PlayerRegistInfoRequests, UserID, SlotID, GateAddrInfo, CenterAddrInfo);
