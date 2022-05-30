@@ -7,6 +7,12 @@
 #include "SimpleProtocolsDefinition.h"
 #include "ServerList.h"
 
+UMMOARPGGateServerObject::UMMOARPGGateServerObject()
+	: UserID(INDEX_NONE)
+{
+
+}
+
 void UMMOARPGGateServerObject::Init()
 {
 	Super::Init();
@@ -22,7 +28,13 @@ void UMMOARPGGateServerObject::Tick(float DeltaTime)
 void UMMOARPGGateServerObject::Close()
 {
 	Super::Close();
-
+	if (UserID != INDEX_NONE) {
+		SIMPLE_CLIENT_SEND(CenterClient, SP_PlayerQuitRequests, UserID);// 网关关闭的时候发送玩家退出协议.
+		UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_PlayerQuitRequests] UserID = %i"), UserID);
+	}
+	else {
+		UE_LOG(LogMMOARPGGateServer, Error, TEXT("[SP_PlayerQuitRequests] Error UserID = %i"), UserID);
+	}
 }
 
 void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
@@ -50,6 +62,8 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 			// 先获取来自客户端Hallmain发来的 玩家形象的用户ID.
 			int32 PlayerID = INDEX_NONE;
 			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterAppearanceRequests, PlayerID);
+
+			UserID = PlayerID;// 注册用户ID;
 
 			// 获取当前本网关 服务器的地址, 并把请求转发到db端.
 			FSimpleAddrInfo AddrInfo;

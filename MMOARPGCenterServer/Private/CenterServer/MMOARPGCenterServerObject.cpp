@@ -49,6 +49,24 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			}
 			break;
 		}
+
+		/* 玩家退出. */
+		case SP_PlayerQuitRequests:
+		{
+			int32 UserID = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerQuitRequests, UserID);
+
+			if (UserID != INDEX_NONE) {
+				if (RemoveRegistInfo(UserID)) {
+					UE_LOG(LogMMOARPGCenterServer, Display, TEXT("Object removed [%i] successfully"), UserID);
+				}
+				else {
+					UE_LOG(LogMMOARPGCenterServer, Display, TEXT("The object was not found [%i] and may have been removed"), UserID);
+				}
+			}
+			break;
+		}
+
 	}
 }
 
