@@ -40,20 +40,20 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 			
 			// 之前在db里设置过,若为空则默认填充[]
 			if (UserJson != TEXT("[]") && SlotJson != TEXT("[]")) {
-				// 用给定的中心服务器地址 把服务器转换成 特定的中心服务器.
-				if (UMMOARPGCenterServerObject* InCenterServer = Cast<UMMOARPGCenterServerObject>(FSimpleNetManage::GetNetManageNetworkObject(CenterServer, CenterAddrInfo)))
-				{
+// 				// 用给定的中心服务器地址 把服务器转换成 特定的中心服务器.
+// 				if (UMMOARPGCenterServerObject* InCenterServer = Cast<UMMOARPGCenterServerObject>(FSimpleNetManage::GetNetManageNetworkObject(CenterServer, CenterAddrInfo))) {
+				
 					// 解析出RI中的 CA存档和玩家信息 并注册到 玩家注册表里.
 					FMMOARPGPlayerRegistInfo RI;
 					NetDataAnalysis::StringToCharacterAppearances(SlotJson, RI.CAInfo);
 					NetDataAnalysis::StringToUserData(UserJson, RI.UserInfo);
-					InCenterServer->AddRegistInfo(RI);
+					UMMOARPGCenterServerObject::AddRegistInfo(RI);
 
 					// 预准备DS服务器.
 // 					FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("192.168.2.30"), 7777);// 先写死1个服务器机器IP地址.
 					FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("127.0.0.1"), 7777);// 先写死1个服务器机器IP地址.暂设为本地本机IP,不用服务器机器.
 					SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, DsAddr);
-				}
+// 				}
 			}
 
 			break;

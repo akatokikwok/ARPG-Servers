@@ -4,14 +4,20 @@
 #include "Protocol/ServerProtocol.h"
 #include "Protocol/HallProtocol.h"
 #include "ServerList.h"
+#include "Protocol/GameProtocol.h"
+
+TMap<int32, FMMOARPGPlayerRegistInfo> UMMOARPGCenterServerObject::PlayerRegistInfos;
 
 void UMMOARPGCenterServerObject::Init()
 {
 	Super::Init();
 
-	// 主动为玩家注册信息映射表手动分配内存.
-	for (int32 i = 0; i < 2000; i++) {
-		PlayerRegistInfos.Add(i, FMMOARPGPlayerRegistInfo());
+	// 缓存池里没元素才执行.
+	if (!PlayerRegistInfos.Num()) {
+		// 主动为缓存池手动分配内存.
+		for (int32 i = 0; i < 2000; i++) {
+			PlayerRegistInfos.Add(i, FMMOARPGPlayerRegistInfo());
+		}
 	}
 }
 
@@ -57,7 +63,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerQuitRequests, UserID);
 
 			if (UserID != INDEX_NONE) {
-				if (RemoveRegistInfo(UserID)) {
+				if (UMMOARPGCenterServerObject::RemoveRegistInfo(UserID)) {
 					UE_LOG(LogMMOARPGCenterServer, Display, TEXT("Object removed [%i] successfully"), UserID);
 				}
 				else {
@@ -67,6 +73,26 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 刷新登录玩家请求. */
+		case SP_UpdateLoginCharacterInfoRequests:
+		{
+			int32 UserID = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateLoginCharacterInfoRequests, UserID);
+
+			if (UserID != INDEX_NONE) {
+				// 挑选缓存池里匹配的ID并把对应的相貌身材压缩成JSON, 组织成一条回复发回去.
+				for (auto& Tmp : PlayerRegistInfos) {
+					if (Tmp.Value.UserInfo.ID == UserID) {
+						FString CAJsonString;
+						NetDataAnalysis::CharacterAppearancesToString(Tmp.Value.CAInfo, CAJsonString);
+						// 把压缩好的JSON发给DS.(DS在GameMode里)
+						SIMPLE_PROTOCOLS_SEND(SP_UpdateLoginCharacterInfoResponses, UserID, CAJsonString);
+						break;
+					}
+				}
+			}
+			break;
+		}
 	}
 }
 
