@@ -64,6 +64,18 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerQuitRequests, UserID);
 
 			if (UserID != INDEX_NONE) {
+				
+				/* 退出游戏的时候, 把用户的属性集记录下来压成JSON发给上一层CS-dbclient. */
+				if (FMMOARPGPlayerRegistInfo* InPlayerInfo = PlayerRegistInfos.Find(UserID)) {
+					if (InPlayerInfo->CharacterAttributes.Num() > 0) {
+						FString JsonString;
+ 						NetDataAnalysis::MMOARPGCharacterAttributeToString(InPlayerInfo->CharacterAttributes, JsonString);
+						// 从CS发给CS-dbclient;
+						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests,/* UserID, InPlayerInfo->CAInfo.SlotPosition, */JsonString);
+					}
+				}
+
+				/* 在前一步上传完角色属性集后 再移除CS服务器上的角色信息. */
 				if (UMMOARPGCenterServerObject::RemoveRegistInfo(UserID)) {
 					UE_LOG(LogMMOARPGCenterServer, Display, TEXT("Object removed [%i] successfully"), UserID);
 				}

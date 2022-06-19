@@ -487,6 +487,28 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 刷新人物属性集 */
+		case SP_UpdateCharacterDataResponses:
+		{
+			FString JsonString;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateCharacterDataRequests, JsonString);
+			
+			if (!JsonString.IsEmpty()) {
+				TMap<int32, FMMOARPGCharacterAttribute> CharacterAttributes;
+				if (NetDataAnalysis::StringToMMOARPGCharacterAttribute(JsonString, CharacterAttributes)) {/* 传入的玩家属性集JSON解析为<玩家-属性集>Map*/
+
+					if (CharacterAttributes.Num() > 0) {
+						for (auto& Tmp : CharacterAttributes) {
+
+						}
+
+						SIMPLE_PROTOCOLS_SEND(SP_UpdateCharacterDataResponses);
+					}
+				}
+			}
+			break;
+		}
+
 		/**  */
 	}
 }
