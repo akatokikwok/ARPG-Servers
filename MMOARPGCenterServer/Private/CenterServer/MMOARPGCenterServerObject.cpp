@@ -44,15 +44,15 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			FSimpleAddrInfo GateAddrInfo;
 			SIMPLE_PROTOCOLS_RECEIVE(SP_LoginToDSServerRequests, UserID, SlotID, GateAddrInfo)
 
-			if (UserID != INDEX_NONE && SlotID != INDEX_NONE) {
+				if (UserID != INDEX_NONE && SlotID != INDEX_NONE) {
 
-				FSimpleAddrInfo CenterAddrInfo;// 准备1个中心服务器的地址.
-				GetRemoteAddrInfo(CenterAddrInfo);
+					FSimpleAddrInfo CenterAddrInfo;// 准备1个中心服务器的地址.
+					GetRemoteAddrInfo(CenterAddrInfo);
 
-				// 收到了来自网关的请求之后, 中心服务器向Center-dbClient 发送注册请求.
-				SIMPLE_CLIENT_SEND(dbClient, SP_PlayerRegistInfoRequests, UserID, SlotID, GateAddrInfo, CenterAddrInfo);
-				
-			}
+					// 收到了来自网关的请求之后, 中心服务器向Center-dbClient 发送注册请求.
+					SIMPLE_CLIENT_SEND(dbClient, SP_PlayerRegistInfoRequests, UserID, SlotID, GateAddrInfo, CenterAddrInfo);
+
+				}
 			break;
 		}
 
@@ -91,6 +91,30 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 					}
 				}
 			}
+			break;
+		}
+		
+		/** GAS人物属性集请求. */
+		case SP_GetCharacterDataRequests:
+		{
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID);
+
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
+				FString CharacterDataJsonString;
+
+				/* 判断是不是第一次获取GAS属性集数据 */
+				if (true) {
+					SIMPLE_CLIENT_SEND(dbClient, SP_GetCharacterDataRequests, UserID, CharacterID);
+				}
+				/* 非第一次, 则以CS服务器为主.*/
+				else {
+					
+					SIMPLE_PROTOCOLS_SEND(SP_GetCharacterDataResponses, UserID, CharacterDataJsonString);
+				}
+			}
+
 			break;
 		}
 	}

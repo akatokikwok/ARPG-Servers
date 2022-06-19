@@ -3,6 +3,7 @@
 #include "log/MMOARPGCenterServerLog.h"
 #include "Protocol/HallProtocol.h"
 #include "Protocol/ServerProtocol.h"
+#include "Protocol/GameProtocol.h"
 #include "ServerList.h"
 #include "MMOARPGType.h"
 #include "MMOARPGCenterServerObject.h"
@@ -59,6 +60,19 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 来自DB的 人物GAS属性集回复 */
+		case SP_GetCharacterDataResponses:
+		{
+			FSimpleAddrInfo CenterAddrInfo;
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			FString JsonString;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataResponses, /*UserID, CharacterID,*/ JsonString, CenterAddrInfo);
+
+			// 之后再让CS服务器发送GAS属性集至客户端,形成GAS属性集更新逻辑闭环.
+
+			break;
+		}
 	}
 }
 

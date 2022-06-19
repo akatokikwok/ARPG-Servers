@@ -7,6 +7,7 @@
 #include "../../SimpleHTTP/Source/SimpleHTTP/Public/SimpleHTTPManage.h"
 #include "Protocol/HallProtocol.h"
 #include <Protocol/ServerProtocol.h>
+#include "Protocol/GameProtocol.h"
 
 void UMMOARPGServerObejct::Init()
 {
@@ -462,6 +463,22 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotCAInfoJson, GateAddrInfo, CenterAddrInfo);// 把处理后的用户信息JSON发出去.
 				}
 			}
+		}
+
+		/** 游戏协议: GAS人物属性集请求. */
+		case SP_GetCharacterDataRequests:
+		{
+			
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID);
+
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
+				FString CharacterDataJsonString;
+				SIMPLE_PROTOCOLS_SEND(SP_GetCharacterDataResponses, UserID, CharacterDataJsonString);// 发给CS-dbClient;
+			}
+
+			break;
 		}
 	}
 }
