@@ -7,7 +7,6 @@
 #include "ServerList.h"
 #include "MMOARPGType.h"
 #include "MMOARPGCenterServerObject.h"
-#include <SimpleNetManage.h>
 
 void UMMOARPGdbClientObject::Init()
 {
@@ -67,12 +66,27 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 			int32 UserID = INDEX_NONE;
 			int32 CharacterID = INDEX_NONE;
 			FString JsonString;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataResponses, /*UserID, CharacterID,*/ JsonString, CenterAddrInfo);
+			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataResponses, UserID, CharacterID, JsonString, CenterAddrInfo);
 
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
+				FMMOARPGCharacterAttribute CharacterAttribute;
+				if (NetDataAnalysis::StringToMMOARPGCharacterAttribute(JsonString, CharacterAttribute)) {/* 确实能解析来自DB的属性集*/
+					// 在中心服务器上 注册给定的属性集到指定的用户数据里
+					UMMOARPGCenterServerObject::AddRegistInfo_CharacterAttribute(UserID, CharacterID, CharacterAttribute);
+
+					// 转发至下一层CS
+					SIMPLE_SERVER_SEND(CenterServer, SP_GetCharacterDataResponses, CenterAddrInfo, UserID, JsonString);
+				}
+				else {
+					UE_LOG(LogMMOARPGCenterServer, Error, TEXT("ERROR: The [%s] could not be parsed."), *JsonString);
+				}
+			}
 			// 之后再让CS服务器发送GAS属性集至客户端,形成GAS属性集更新逻辑闭环.
 
 			break;
 		}
+
+		/**  */
 	}
 }
 

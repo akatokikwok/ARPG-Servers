@@ -3,8 +3,9 @@
 #include "log/MMOARPGCenterServerLog.h"
 #include "Protocol/ServerProtocol.h"
 #include "Protocol/HallProtocol.h"
-#include "ServerList.h"
 #include "Protocol/GameProtocol.h"
+#include "ServerList.h"
+
 
 TMap<int32, FMMOARPGPlayerRegistInfo> UMMOARPGCenterServerObject::PlayerRegistInfos;
 
@@ -102,21 +103,32 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID);
 
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
+				
 				FString CharacterDataJsonString;
-
-				/* 判断是不是第一次获取GAS属性集数据 */
-				if (true) {
-					SIMPLE_CLIENT_SEND(dbClient, SP_GetCharacterDataRequests, UserID, CharacterID);
+				if (FMMOARPGPlayerRegistInfo* InUserData = PlayerRegistInfos.Find(UserID)) {/* 是哪个用户的信息*/
+					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {/* 哪个用户的哪个单独角色的属性集*/
+						/* 找到了玩家属性集就将其压缩成JSON 并给这个response发送出去.*/
+						
+						NetDataAnalysis::MMOARPGCharacterAttributeToString(*InCharacterAttribute, CharacterDataJsonString);
+						SIMPLE_PROTOCOLS_SEND(SP_GetCharacterDataResponses, UserID, CharacterDataJsonString);
+					}
+					else {
+						/* 找不到玩家属性集就让DS发送一条指令给db-client.*/
+						FSimpleAddrInfo CenterAddrInfo;
+						GetRemoteAddrInfo(CenterAddrInfo);
+						SIMPLE_CLIENT_SEND(dbClient, SP_GetCharacterDataRequests, UserID, CharacterID, CenterAddrInfo);
+					}
 				}
-				/* 非第一次, 则以CS服务器为主.*/
 				else {
-					
+					/* 用户数据甚至都不存在的情况.*/
+					CharacterDataJsonString = TEXT("The user data does not exist on the center server.");
 					SIMPLE_PROTOCOLS_SEND(SP_GetCharacterDataResponses, UserID, CharacterDataJsonString);
 				}
 			}
-
 			break;
 		}
+
+		/**  */
 	}
 }
 
@@ -140,5 +152,18 @@ bool UMMOARPGCenterServerObject::RemoveRegistInfo(const int32 InUserID)
 	}
 
 	return false;
+}
+
+// 注册给定的属性集到指定的用户数据里
+void UMMOARPGCenterServerObject::AddRegistInfo_CharacterAttribute(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InCharacterAttribute)
+{
+	if (FMMOARPGPlayerRegistInfo* PlayerInfo = PlayerRegistInfos.Find(InUserID)) {
+		if (!PlayerInfo->CharacterAttributes.Contains(InCharacterID)) {
+			PlayerInfo->CharacterAttributes.Add(InCharacterID, InCharacterAttribute);
+		}
+		else {
+			UE_LOG(LogMMOARPGCenterServer, Error, TEXT("Warning: The data already exists in the table. Please check the problem."));
+		}
+	}
 }
 

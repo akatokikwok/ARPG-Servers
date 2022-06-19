@@ -21,6 +21,9 @@ public:
  	static void AddRegistInfo(const FMMOARPGPlayerRegistInfo &InRegistInfo);
 	// 格式化指定用户ID的 RI.
  	static bool RemoveRegistInfo(const int32 InUserID);
+	// 注册给定的属性集到指定的用户数据里
+	static void AddRegistInfo_CharacterAttribute(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InCharacterAttribute);
+
 private:
 	/**
 	 * 原理:由于CS和单个客户端相链接时会创建Channel.

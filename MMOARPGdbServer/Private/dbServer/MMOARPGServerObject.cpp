@@ -468,18 +468,26 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 		/** 游戏协议: GAS人物属性集请求. */
 		case SP_GetCharacterDataRequests:
 		{
-			
+			FSimpleAddrInfo CenterAddrInfo;
 			int32 UserID = INDEX_NONE;
 			int32 CharacterID = INDEX_NONE;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID);
+			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID, CenterAddrInfo);
 
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
-				FString CharacterDataJsonString;
-				SIMPLE_PROTOCOLS_SEND(SP_GetCharacterDataResponses, UserID, CharacterDataJsonString);// 发给CS-dbClient;
-			}
+				/* 构造1个GAS玩家属性集并将其压入JSON*/
+				FMMOARPGCharacterAttribute CharacterAttribute;
+				{
 
+				}
+				FString CharacterDataJsonString;
+				NetDataAnalysis::MMOARPGCharacterAttributeToString(CharacterAttribute, CharacterDataJsonString);
+				/* 压好的JSON-玩家属性集发出去,发给CS-dbclient.*/
+				SIMPLE_PROTOCOLS_SEND(SP_GetCharacterDataResponses, UserID, CharacterID, CharacterDataJsonString, CenterAddrInfo);
+			}
 			break;
 		}
+
+		/**  */
 	}
 }
 
