@@ -56,6 +56,26 @@ void UMMOARPGServerObejct::Init()
 		UE_LOG(LogMMOARPGdbServer, Error, TEXT("we create table mmoarpg_characters_ca failed."));// 如果Post失败就打印提示 创表失败.
 	}
 
+	// 初始化一张用于玩家属性集的表
+	FString Create_mmoarpg_character_a_SQL =
+		TEXT("CREATE TABLE IF NOT EXISTS `mmoarpg_characters_a`(\
+		`id` INT UNSIGNED AUTO_INCREMENT,\
+		`user_id` INT UNSIGNED DEFAULT '0',\
+		`character_id` INT UNSIGNED DEFAULT '0',\
+		`mmoarpg_slot` INT UNSIGNED DEFAULT '0',\
+		`Health_Base` double(11,4) DEFAULT '0.00',\
+		`Health_Current` double(11,4) DEFAULT '0.00',\
+		`MaxHealth_Base` double(11,4) DEFAULT '0.00',\
+		`MaxHealth_Current` double(11,4) DEFAULT '0.00',\
+		`Mana_Base` double(11,4) DEFAULT '0.00',\
+		`Mana_Current` double(11,4) DEFAULT '0.00',\
+		`MaxMana_Base` double(11,4) DEFAULT '0.00',\
+		`MaxMana_Current` double(11,4) DEFAULT '0.00',\
+		 PRIMARY KEY(`id`)\
+		) ENGINE = INNODB DEFAULT CHARSET = utf8; ");
+	if (!Post(Create_mmoarpg_character_a_SQL)) {
+		UE_LOG(LogMMOARPGdbServer, Error, TEXT("create table mmoarpg_characters_a (GASAttributeSet) failed."));
+	}
 }
 
 void UMMOARPGServerObejct::Tick(float DeltaTime)
@@ -474,11 +494,24 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID, CenterAddrInfo);
 
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
-				/* 构造1个GAS玩家属性集并将其压入JSON*/
+				/* 从DB上拉取数据, 以此构造1个GAS玩家属性集*/
 				FMMOARPGCharacterAttribute CharacterAttribute;
 				{
-
+					FString SQL = FString::Printf(TEXT("SELECT * FROM `mmoarpg_characters_a` WHERE user_id = %i and character_id=%i and mmoarpg_slot=%i;"), UserID, CharacterID/*, MMOARPG_Slot*/);
+					TArray<FSimpleMysqlResult> Result;
+					if (Get(SQL, Result)) {
+						if (Result.Num() > 0) {
+							for (auto& Tmp : Result) {
+								GetAttributeInfo(TEXT("Health"), CharacterAttribute.Health, Tmp.Rows);
+								GetAttributeInfo(TEXT("MaxHealth"), CharacterAttribute.MaxHealth, Tmp.Rows);
+								GetAttributeInfo(TEXT("Mana"), CharacterAttribute.Mana, Tmp.Rows);
+								GetAttributeInfo(TEXT("MaxMana"), CharacterAttribute.MaxMana, Tmp.Rows);
+							}
+						}
+					}
 				}
+				
+				/* GAS玩家属性集并将其压入JSON. */
 				FString CharacterDataJsonString;
 				NetDataAnalysis::MMOARPGCharacterAttributeToString(CharacterAttribute, CharacterDataJsonString);
 				/* 压好的JSON-玩家属性集发出去,发给CS-dbclient.*/
@@ -741,4 +774,16 @@ void UMMOARPGServerObejct::GetSerialString(TCHAR* InSplitPrefix, const TArray<FS
 		OutString += Tmp + InSplitPrefix;
 	}
 	OutString.RemoveFromEnd(TEXT(","));
+}
+
+// 工具方法;
+void UMMOARPGServerObejct::GetAttributeInfo(const FString& InAttributeName, FMMOARPGAttributeData& OutAttributeData, const TMap<FString, FString>& InRow)
+{
+	if (const FString* InBase = InRow.Find(InAttributeName + TEXT("_Base"))) {
+		OutAttributeData.BaseValue = FCString::Atof(**InBase);
+	}
+
+	if (const FString* InCurrent = InRow.Find(InAttributeName + TEXT("_Current"))) {
+		OutAttributeData.CurrentValue = FCString::Atof(**InCurrent);
+	}
 }

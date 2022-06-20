@@ -50,6 +50,10 @@ private:
 	// 将字符集输出成满足 s1, s2, s3, s4的形式.
 	void GetSerialString(TCHAR* InSplitPrefix, const TArray<FString>& InStrings, FString& OutString);
 
+	// 工具方法1;
+	void GetAttributeInfo(const FString& InAttributeName, FMMOARPGAttributeData& OutAttributeData, const TMap<FString, FString>& InRow);
+
+
 protected:
 	USimpleMysqlObject* MysqlObjectRead;// 数据库对象:读
 	USimpleMysqlObject* MysqlObjectWrite;// 数据库对象:写
