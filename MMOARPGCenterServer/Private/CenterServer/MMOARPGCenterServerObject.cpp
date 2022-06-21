@@ -71,7 +71,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 						FString JsonString;
  						NetDataAnalysis::MMOARPGCharacterAttributeToString(InPlayerInfo->CharacterAttributes, JsonString);
 						// 从CS发给CS-dbclient;
-						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests,/* UserID, InPlayerInfo->CAInfo.SlotPosition, */JsonString);
+						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests, InPlayerInfo->UserInfo.ID, JsonString);
 					}
 				}
 

@@ -86,6 +86,22 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 来自DB的 更新人物属性集回复. */
+		case SP_UpdateCharacterDataResponses:
+		{
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			bool bUpdateDataSuccessfully = false;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateCharacterDataResponses, UserID, CharacterID, bUpdateDataSuccessfully);
+
+			if (bUpdateDataSuccessfully) {
+				UE_LOG(LogMMOARPGCenterServer, Display, TEXT("Upload succeeded. UserID = %i, CharacterID = %i."), UserID, CharacterID);
+			}
+			else {
+				UE_LOG(LogMMOARPGCenterServer, Error, TEXT("Upload fail. User=%i,CharacterID=%i"), UserID, CharacterID);
+			}
+		}
+
 		/**  */
 	}
 }
