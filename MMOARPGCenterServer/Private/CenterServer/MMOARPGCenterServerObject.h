@@ -23,6 +23,8 @@ public:
  	static bool RemoveRegistInfo(const int32 InUserID);
 	// 注册给定的属性集到指定的用户数据里
 	static void AddRegistInfo_CharacterAttribute(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InCharacterAttribute);
+	// 在玩家信息缓存池里拿取给定用户号的玩家注册信息.
+	static FMMOARPGPlayerRegistInfo* FindPlayerData(int32 InUserID);
 
 private:
 	/**

@@ -66,12 +66,12 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			if (UserID != INDEX_NONE) {
 				
 				/* 退出游戏的时候, 把用户的属性集记录下来压成JSON发给上一层CS-dbclient. */
-				if (FMMOARPGPlayerRegistInfo* InPlayerInfo = PlayerRegistInfos.Find(UserID)) {
+				if (FMMOARPGPlayerRegistInfo* InPlayerInfo = FindPlayerData(UserID)) {
 					if (InPlayerInfo->CharacterAttributes.Num() > 0) {
 						FString JsonString;
  						NetDataAnalysis::MMOARPGCharacterAttributeToString(InPlayerInfo->CharacterAttributes, JsonString);
 						// 从CS发给CS-dbclient;
-						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests, InPlayerInfo->UserInfo.ID, InPlayerInfo->CAInfo.SlotPosition, JsonString);
+						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests, UserID, InPlayerInfo->CAInfo.SlotPosition, JsonString);
 					}
 				}
 
@@ -118,7 +118,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
 				
 				FString CharacterDataJsonString;
-				if (FMMOARPGPlayerRegistInfo* InUserData = PlayerRegistInfos.Find(UserID)) {/* 是哪个用户的信息*/
+				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {/* 是哪个用户的信息*/
 					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {/* 哪个用户的哪个单独角色的属性集*/
 						/* 找到了玩家属性集就将其压缩成JSON 并给这个response发送出去.*/
 						
@@ -170,7 +170,7 @@ bool UMMOARPGCenterServerObject::RemoveRegistInfo(const int32 InUserID)
 // 注册给定的属性集到指定的用户数据里
 void UMMOARPGCenterServerObject::AddRegistInfo_CharacterAttribute(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InCharacterAttribute)
 {
-	if (FMMOARPGPlayerRegistInfo* PlayerInfo = PlayerRegistInfos.Find(InUserID)) {
+	if (FMMOARPGPlayerRegistInfo* PlayerInfo = FindPlayerData(InUserID)) {
 		if (!PlayerInfo->CharacterAttributes.Contains(InCharacterID)) {
 			PlayerInfo->CharacterAttributes.Add(InCharacterID, InCharacterAttribute);
 		}
@@ -178,5 +178,18 @@ void UMMOARPGCenterServerObject::AddRegistInfo_CharacterAttribute(int32 InUserID
 			UE_LOG(LogMMOARPGCenterServer, Error, TEXT("Warning: The data already exists in the table. Please check the problem."));
 		}
 	}
+}
+
+// 在玩家信息缓存池里拿取给定用户号的玩家注册信息.
+FMMOARPGPlayerRegistInfo* UMMOARPGCenterServerObject::FindPlayerData(int32 InUserID)
+{
+	for (auto& Tmp : PlayerRegistInfos) {
+		if (Tmp.Value.IsVaild()) {
+			if (Tmp.Value.UserInfo.ID == InUserID) {
+				return &Tmp.Value;
+			}
+		}
+	}
+	return nullptr;
 }
 
