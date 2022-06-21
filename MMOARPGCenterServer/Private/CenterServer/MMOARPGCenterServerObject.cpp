@@ -71,7 +71,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 						FString JsonString;
  						NetDataAnalysis::MMOARPGCharacterAttributeToString(InPlayerInfo->CharacterAttributes, JsonString);
 						// 从CS发给CS-dbclient;
-						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests, InPlayerInfo->UserInfo.ID, JsonString);
+						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests, InPlayerInfo->UserInfo.ID, InPlayerInfo->CAInfo.SlotPosition, JsonString);
 					}
 				}
 
@@ -112,7 +112,8 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 		{
 			int32 UserID = INDEX_NONE;
 			int32 CharacterID = INDEX_NONE;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID);
+			int32 MMOARPGSlot = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID, MMOARPGSlot);
 
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
 				
@@ -128,7 +129,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 						/* 找不到玩家属性集就让DS发送一条指令给db-client.*/
 						FSimpleAddrInfo CenterAddrInfo;
 						GetRemoteAddrInfo(CenterAddrInfo);
-						SIMPLE_CLIENT_SEND(dbClient, SP_GetCharacterDataRequests, UserID, CharacterID, CenterAddrInfo);
+						SIMPLE_CLIENT_SEND(dbClient, SP_GetCharacterDataRequests, UserID, CharacterID, MMOARPGSlot, CenterAddrInfo);
 					}
 				}
 				else {
