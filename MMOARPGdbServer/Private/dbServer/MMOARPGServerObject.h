@@ -54,16 +54,16 @@ private:
 	void GetAttributeInfo(const FString& InAttributeName, FMMOARPGAttributeData& OutAttributeData, const TMap<FString, FString>& InRow);
 
 	// 工具方法; 判断角色属性集是否存在.
-	bool IsCharacterAttributeExit(int32 InUserID, int32 InCharacterID);
+	bool IsCharacterAttributeExit(int32 InUserID, int32 InCharacterID, int32 MMOARPG_Slot);
 
 	// 工具方法; 创建并更新1个人物属性集.
-	bool CreateAndUpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData);
+	bool CreateAndUpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData, int32 MMOARPG_Slot);
 
 	// 工具方法; 创建1个人物属性集.
-	bool CreateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData);
+	bool CreateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData, int32 MMOARPG_Slot);
 
 	// 工具方法; 更新1个人物属性集.
-	bool UpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData);
+	bool UpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData, int32 MMOARPG_Slot);
 
 protected:
 	USimpleMysqlObject* MysqlObjectRead;// 数据库对象:读

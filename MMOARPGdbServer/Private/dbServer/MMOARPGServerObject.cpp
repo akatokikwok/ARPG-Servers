@@ -372,7 +372,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 					if (bCreateCharacter == true) {
 						// 创建角色属性集
 						FMMOARPGCharacterAttribute CharacterAttribute;
-						bCreateCharacter = CreateAndUpdateCharacterAttributeInfo(UserID, 1, CharacterAttribute);
+						bCreateCharacter = CreateAndUpdateCharacterAttributeInfo(UserID, 1, CharacterAttribute, CA_receive.SlotPosition);
 					}
 
 					// 处理完之后 把Response 发回至 Gate-dbClient
@@ -497,17 +497,18 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			FSimpleAddrInfo CenterAddrInfo;
 			int32 UserID = INDEX_NONE;
 			int32 CharacterID = INDEX_NONE;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID, CenterAddrInfo);
+			int32 MMOARPG_Slot = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID, MMOARPG_Slot, CenterAddrInfo);
 
-			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && MMOARPG_Slot != INDEX_NONE) {
 				/* 从DB上拉取数据, 以此构造1个GAS玩家属性集*/
 				FMMOARPGCharacterAttribute CharacterAttribute;
 				{
-					if (!IsCharacterAttributeExit(UserID, CharacterID)) {/* 不存在属性集就直接创建.*/
-						CreateCharacterAttributeInfo(UserID, CharacterID, CharacterAttribute);
+					if (!IsCharacterAttributeExit(UserID, CharacterID, MMOARPG_Slot)) {/* 不存在属性集就直接创建.*/
+						CreateCharacterAttributeInfo(UserID, CharacterID, CharacterAttribute, MMOARPG_Slot);
 					}
 					else {
-						FString SQL = FString::Printf(TEXT("SELECT * FROM `mmoarpg_characters_a` WHERE user_id = %i and character_id=%i and mmoarpg_slot=%i;"), UserID, CharacterID/*, MMOARPG_Slot*/);
+						FString SQL = FString::Printf(TEXT("SELECT * FROM `mmoarpg_characters_a` WHERE user_id = %i and character_id=%i and mmoarpg_slot=%i;"), UserID, CharacterID, MMOARPG_Slot);
 						TArray<FSimpleMysqlResult> Result;
 						if (Get(SQL, Result)) {
 							if (Result.Num() > 0) {
@@ -536,7 +537,8 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 		{
 			int32 UserID = INDEX_NONE;
 			FString JsonString;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateCharacterDataRequests, UserID, JsonString);
+			int32 MMOARPG_Slot = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateCharacterDataRequests, UserID, MMOARPG_Slot, JsonString);
 
 			if (!JsonString.IsEmpty()) {
 				TMap<int32, FMMOARPGCharacterAttribute> CharacterAttributes;
@@ -544,7 +546,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 					if (CharacterAttributes.Num() > 0) {
 						bool UpdateDataSuccessfully = true;
 						for (auto& Tmp : CharacterAttributes) {
-							if (!CreateAndUpdateCharacterAttributeInfo(UserID, Tmp.Key, Tmp.Value)) {
+							if (!CreateAndUpdateCharacterAttributeInfo(UserID, Tmp.Key, Tmp.Value, MMOARPG_Slot)) {
 								UpdateDataSuccessfully = false;
 								SIMPLE_PROTOCOLS_SEND(SP_UpdateCharacterDataResponses, UserID, Tmp.Key, UpdateDataSuccessfully);
 							}
@@ -804,9 +806,9 @@ void UMMOARPGServerObejct::GetAttributeInfo(const FString& InAttributeName, FMMO
 }
 
 // 工具方法; 判断角色属性集是否存在.
-bool UMMOARPGServerObejct::IsCharacterAttributeExit(int32 InUserID, int32 InCharacterID)
+bool UMMOARPGServerObejct::IsCharacterAttributeExit(int32 InUserID, int32 InCharacterID, int32 MMOARPG_Slot)
 {
-	FString SQL = FString::Printf(TEXT("SELECT count(id) FROM `mmoarpg_characters_a` WHERE character_id=%i and user_id=%i;"), InCharacterID, InUserID/*, MMOARPG_Slot*/);
+	FString SQL = FString::Printf(TEXT("SELECT count(id) FROM `mmoarpg_characters_a` WHERE character_id=%i and user_id=%i and mmoarpg_slot=%i;"), InCharacterID, InUserID, MMOARPG_Slot);
 	TArray<FSimpleMysqlResult> Result;
 
 	if (Get(SQL, Result)) {
@@ -823,29 +825,27 @@ bool UMMOARPGServerObejct::IsCharacterAttributeExit(int32 InUserID, int32 InChar
 }
 
 // 工具方法; 创建并更新1个人物属性集.
-bool UMMOARPGServerObejct::CreateAndUpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData)
+bool UMMOARPGServerObejct::CreateAndUpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData, int32 MMOARPG_Slot)
 {
 	// I.检查服务器是否已经存在了该对象
-	bool bExistCharacterAttribute = IsCharacterAttributeExit(InUserID, InCharacterID);
+// 	bool bExistCharacterAttribute = IsCharacterAttributeExit(InUserID, InCharacterID, MMOARPG_Slot);
 
 	// II.存在就更新
-	if (IsCharacterAttributeExit(InUserID, InCharacterID)) {
-		return UpdateCharacterAttributeInfo(InUserID, InCharacterID, InAttributeData/*, MMOARPG_Slot*/);
+	if (IsCharacterAttributeExit(InUserID, InCharacterID, MMOARPG_Slot)) {
+		return UpdateCharacterAttributeInfo(InUserID, InCharacterID, InAttributeData, MMOARPG_Slot);
 	}
 	// II.不存在就创建(插入)
 	else {
-		return CreateCharacterAttributeInfo(InUserID, InCharacterID, InAttributeData/*, MMOARPG_Slot*/);
+		return CreateCharacterAttributeInfo(InUserID, InCharacterID, InAttributeData, MMOARPG_Slot);
 	}
-
-	return true;
 }
 
 // 工具方法; 创建1个人物属性集.
-bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData)
+bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData, int32 MMOARPG_Slot)
 {
 	FString	SQL = FString::Printf(TEXT(
 		"INSERT INTO mmoarpg_characters_a (\
-			 character_id,user_id,\
+			 character_id,user_id,mmoarpg_slot,\
 			 Health_Base,Health_Current,\
 			 MaxHealth_Base,MaxHealth_Current,\
 			 Mana_Base,Mana_Current,\
@@ -855,7 +855,7 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 			 %.2lf,%.2lf,\
 			 %.2lf,%.2lf,\
 			 %.2lf,%.2lf);"),
-		InCharacterID, InUserID/*, MMOARPG_Slot*/,
+		InCharacterID, InUserID, MMOARPG_Slot,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
 		InAttributeData.MaxHealth.BaseValue, InAttributeData.MaxHealth.CurrentValue,
 		InAttributeData.Mana.BaseValue, InAttributeData.Mana.CurrentValue,
@@ -870,7 +870,7 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 }
 
 // 工具方法; 更新1个人物属性集.
-bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData)
+bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData, int32 MMOARPG_Slot)
 {
 	FString SQL = FString::Printf(
 		TEXT("UPDATE mmoarpg_characters_a SET \
@@ -882,13 +882,12 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 			Mana_Current=%.2lf,\
 			MaxMana_Base=%.2lf,\
 			MaxMana_Current=%.2lf \
-			WHERE character_id=%i and user_id = %i;"),
+			WHERE character_id=%i and user_id = %i and mmoarpg_slot=%i;"),
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
 		InAttributeData.MaxHealth.BaseValue, InAttributeData.MaxHealth.CurrentValue,
 		InAttributeData.Mana.BaseValue, InAttributeData.Mana.CurrentValue,
 		InAttributeData.MaxMana.BaseValue, InAttributeData.MaxMana.CurrentValue,
-		InCharacterID, InUserID
-	/*, MMOARPG_Slot*/);
+		InCharacterID, InUserID, MMOARPG_Slot);
 
 	if (Post(SQL)) {
 		UE_LOG(LogMMOARPGdbServer, Display, TEXT("UPDATE mmoarpg_characters_a true"));
