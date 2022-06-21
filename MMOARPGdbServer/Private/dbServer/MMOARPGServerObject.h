@@ -53,6 +53,17 @@ private:
 	// 工具方法1;
 	void GetAttributeInfo(const FString& InAttributeName, FMMOARPGAttributeData& OutAttributeData, const TMap<FString, FString>& InRow);
 
+	// 工具方法; 判断角色属性集是否存在.
+	bool IsCharacterAttributeExit(int32 InUserID, int32 InCharacterID);
+
+	// 工具方法; 创建并更新1个人物属性集.
+	bool CreateAndUpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData);
+
+	// 工具方法; 创建1个人物属性集.
+	bool CreateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData);
+
+	// 工具方法; 更新1个人物属性集.
+	bool UpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData);
 
 protected:
 	USimpleMysqlObject* MysqlObjectRead;// 数据库对象:读
