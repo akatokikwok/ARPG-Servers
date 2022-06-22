@@ -33,7 +33,9 @@ protected:
 	// 给POST操作完成后 绑定的回调.
 	UFUNCTION()
 		void CheckPasswordResult_callback(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful);
-
+	// 检查注册用户结果.
+	UFUNCTION()
+		void CheckRegisterResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful);
 private:
 	/** 给定键入的名字 并核验它的检查类型. */
 	ECheckNameType CheckName(const FString& InName);

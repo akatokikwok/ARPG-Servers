@@ -8,6 +8,7 @@
 #include "Protocol/HallProtocol.h"
 #include <Protocol/ServerProtocol.h>
 #include "Protocol/GameProtocol.h"
+#include "MMOARPGType.h"
 
 void UMMOARPGServerObejct::Init()
 {
@@ -105,6 +106,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 
 	// 根据收到的来自客户端的协议号执行接收.
 	switch (InProtocol) {
+		/** 登录请求. */
 		case SP_LoginRequests:
 		{
 			FString AccountString;
@@ -167,6 +169,60 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			}
 
 			UE_LOG(LogMMOARPGdbServer, Display, TEXT("AccountString = %s, PasswordString = %s"), *AccountString, *PasswordString);
+			break;
+		}
+
+		/** 注册用户请求. --来自LoginServer */
+		case SP_RegisterRequests:
+		{
+			FString RegisterString;
+			FSimpleAddrInfo AddrInfo;// 网关地址, 来自LoginServer发送过来.
+			SIMPLE_PROTOCOLS_RECEIVE(SP_RegisterRequests, RegisterString, AddrInfo)
+
+			ERegistrationType RegistrationType = ERegistrationType::SERVER_BUG_WRONG;
+			if (!RegisterString.IsEmpty()) {
+				//名字验证
+				TArray<FString> Value;
+				RegisterString.ParseIntoArray(Value, TEXT("&"));
+				if (Value.IsValidIndex(1) && Value.IsValidIndex(2)) {
+					FString AccountString = Value[2];
+					FString EmailString = Value[1];
+					if (EmailString.RemoveFromStart(TEXT("Email=")) && AccountString.RemoveFromStart(TEXT("Account="))) {
+						// 账户在服务器是不是有重复的
+						FString SQL = FString::Printf(TEXT("SELECT ID FROM wp_users WHERE user_login = \"%s\" or user_email= \"%s\";"),
+							*AccountString,
+							*EmailString);
+
+						TArray<FSimpleMysqlResult> Result;
+						if (Get(SQL, Result)) {
+							if (Result.Num() > 0) {
+								RegistrationType = ERegistrationType::ACCOUNT_AND_EMAIL_REPETITION_ERROR;
+								SIMPLE_PROTOCOLS_SEND(SP_RegisterResponses, AddrInfo, RegistrationType);
+							}
+							else {
+								FString Parma = FString::Printf(TEXT("%s&IP=%i&Port=%i&Channel=%s&UserID=%i"),
+									*RegisterString,
+									AddrInfo.Addr.IP,
+									AddrInfo.Addr.Port,
+									*AddrInfo.ChannelID.ToString());
+
+								FSimpleHTTPResponseDelegate Delegate;
+								Delegate.SimpleCompleteDelegate.BindUObject(this, &UMMOARPGServerObejct::CheckRegisterResult);
+
+								FString WpIP = FSimpleNetGlobalInfo::Get()->GetInfo().PublicIP;
+
+								SIMPLE_HTTP.PostRequest(
+									*FString::Printf(TEXT("http://%s/wp/wp-content/plugins/SimpleUserRegistration/SimpleUserRegistration.php"),
+									*WpIP),
+									*Parma,
+									Delegate);
+
+							}
+						}
+					}
+				}
+			}
+
 			break;
 		}
 
@@ -657,6 +713,43 @@ void UMMOARPGServerObejct::CheckPasswordResult_callback(const FSimpleHttpRequest
 				// 发送给客户端,说明是密码输错了.
 				ELoginType Type = ELoginType::LOGIN_PASSWORD_WRONG;
 				SIMPLE_PROTOCOLS_SEND(SP_LoginResponses, AddrInfo, Type, String);
+			}
+		}
+	}
+}
+
+void UMMOARPGServerObejct::CheckRegisterResult(const FSimpleHttpRequest& InRequest, const FSimpleHttpResponse& InResponse, bool bLinkSuccessful)
+{
+	//2130706433&51509&3B76DAFE4F31856008E3AB82AED291C3&0
+	if (bLinkSuccessful) {
+		//xx&IP&Port&0
+		TArray<FString> Values;
+		InResponse.ResponseMessage.ParseIntoArray(Values, TEXT("&"));
+
+		FSimpleAddrInfo AddrInfo;
+		uint32 UserID = 0;
+		ERegistrationVerification RV = ERegistrationVerification::REGISTRATION_FAIL;
+		if (Values.Num()) {
+			if (Values.IsValidIndex(0)) {
+				AddrInfo.Addr.IP = FCString::Atoi(*Values[0]);
+			}
+			if (Values.IsValidIndex(1)) {
+				AddrInfo.Addr.Port = FCString::Atoi(*Values[1]);
+			}
+			if (Values.IsValidIndex(2)) {
+				FGuid::ParseExact(Values[2], EGuidFormats::Digits, AddrInfo.ChannelID);
+			}
+			if (Values.IsValidIndex(3)) {
+				RV = (ERegistrationVerification)FCString::Atoi(*Values[3]);
+			}
+
+			ERegistrationType RegistrationType = ERegistrationType::SERVER_BUG_WRONG;
+			if (RV == REGISTRATION_SUCCESS) {
+				RegistrationType = ERegistrationType::PLAYER_REGISTRATION_SUCCESS;
+				SIMPLE_PROTOCOLS_SEND(SP_RegisterResponses, AddrInfo, RegistrationType);
+			}
+			else {
+				SIMPLE_PROTOCOLS_SEND(SP_RegisterResponses, AddrInfo, RegistrationType);
 			}
 		}
 	}

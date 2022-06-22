@@ -45,6 +45,23 @@ void UMMOARPGLoginServerObejct::RecvProtocol(uint32 InProtocol)
 
 			break;
 		}
+
+		/** 注册请求. (来自客户端) */
+		case SP_RegisterRequests:
+		{
+			// 接收来自客户端发送的账号
+			FString RegisterInfo;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_RegisterRequests, RegisterInfo);
+
+			FSimpleAddrInfo AddrInfo;// 网关地址
+			GetRemoteAddrInfo(AddrInfo);
+
+			SIMPLE_CLIENT_SEND(dbClient, SP_RegisterRequests, RegisterInfo, AddrInfo);
+
+			UE_LOG(LogMMOARPGLoginServer, Display, TEXT("[SP_RegisterRequests] AccountString=%s,PasswordString=%s"), *RegisterInfo);
+
+			break;
+		}
 	}
 
 }

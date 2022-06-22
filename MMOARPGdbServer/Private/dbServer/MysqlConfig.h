@@ -7,6 +7,12 @@ enum EPasswordVerification
 	VERIFICATION_FAIL,
 };
 
+enum ERegistrationVerification
+{
+	REGISTRATION_SUCCESS = 0,
+	REGISTRATION_FAIL,
+};
+
 /* 
  * 管理配置表的单例类
  */

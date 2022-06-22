@@ -59,6 +59,20 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 
 			break;
 		}
+
+		/** 注册用户回复, 来自DB */
+		case SP_RegisterResponses:
+		{
+			ERegistrationType Type = ERegistrationType::SERVER_BUG_WRONG;
+			FSimpleAddrInfo AddrInfo;
+
+			//拿到客户端发送的账号
+			SIMPLE_PROTOCOLS_RECEIVE(SP_RegisterResponses, AddrInfo, Type);
+
+			SIMPLE_SERVER_SEND(LoginServer, SP_RegisterResponses, AddrInfo, Type);
+
+			UE_LOG(LogMMOARPGLoginServer, Display, TEXT("[SP_RegisterResponses]"));
+		}
 	
 	}
 
