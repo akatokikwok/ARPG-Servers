@@ -22,6 +22,9 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 	FSimpleMysqlConfig::Get()->Init();// 初始化配置表.
 	FSimpleNetGlobalInfo::Get()->Init();// 初始化分布式插件
 
+	// 使用JSON文件初始化人物属性集.
+	UMMOARPGServerObejct::InitCharacterAttribute(FPaths::ProjectDir() / TEXT("CharacterAttribute.json"));
+
 	/* 2.创建服务器实例.*/
 	FSimpleNetManage* dbServer = 
 		FSimpleNetManage::CreateManage(ESimpleNetLinkState::LINKSTATE_LISTEN, ESimpleSocketType::SIMPLESOCKETTYPE_TCP);

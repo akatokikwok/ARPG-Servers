@@ -19,5 +19,7 @@ public class MMOARPGdbServer : ModuleRules
 		PrivateDependencyModuleNames.Add("SimpleNetChannel");
 		PrivateDependencyModuleNames.Add("SimpleHTTP");
 		PrivateDependencyModuleNames.Add("MMOARPGCommon");
+		PrivateDependencyModuleNames.Add("Json");// 使用到了JSON读取器.
+
 	}
 }

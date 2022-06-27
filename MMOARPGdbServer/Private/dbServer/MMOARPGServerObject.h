@@ -8,7 +8,7 @@
 #include "Blueprint/SimpleMysqlObject.h"
 #include "Core/SimpleMysqlLinkType.h"
 #include "../../SimpleHTTP/Source/SimpleHTTP/Public/SimpleHTTPType.h"
-#include <MMOARPGType.h>
+#include "MMOARPGType.h"
 #include "MMOARPGServerObject.generated.h"
 
 /** ServerObejct */
@@ -66,9 +66,15 @@ private:
 
 	// 工具方法; 更新1个人物属性集.
 	bool UpdateCharacterAttributeInfo(int32 InUserID, int32 InCharacterID, const FMMOARPGCharacterAttribute& InAttributeData, int32 MMOARPG_Slot);
+public:
+	/** 初始化人物属性集(需要一个路径). */
+	static bool InitCharacterAttribute(const FString& InPath);
 
 protected:
 	USimpleMysqlObject* MysqlObjectRead;// 数据库对象:读
 	USimpleMysqlObject* MysqlObjectWrite;// 数据库对象:写
+
+	// 人物属性 缓存池, 1个ID对应1块人物属性.
+	static TMap<int32, FMMOARPGCharacterAttribute> MMOARPGCharacterAttribute;
 
 };

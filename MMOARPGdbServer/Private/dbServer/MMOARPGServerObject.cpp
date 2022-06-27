@@ -9,6 +9,14 @@
 #include <Protocol/ServerProtocol.h>
 #include "Protocol/GameProtocol.h"
 #include "MMOARPGType.h"
+#include "Misc/FileHelper.h"
+#include "Json.h"
+
+#if PLATFORM_WINDOWS
+#pragma optimize("",off) 
+#endif
+
+TMap<int32, FMMOARPGCharacterAttribute> UMMOARPGServerObejct::MMOARPGCharacterAttribute;// 人物属性缓存池 类外初始化.
 
 void UMMOARPGServerObejct::Init()
 {
@@ -988,4 +996,87 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 	}
 	UE_LOG(LogMMOARPGdbServer, Display, TEXT("UPDATE mmoarpg_characters_a false"));
 	return false;
+}
+
+/** 初始化人物属性集(需要一个路径). */
+bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
+{
+	// 此路径下的JSON文件不存在就报错.
+	if (!IFileManager::Get().FileExists(*InPath)) {
+		UE_LOG(LogMMOARPGdbServer, Error, TEXT("[%s]The file does not exist under this path."), *InPath);
+		return false;
+	}
+	// 用来保存人物属性表的字符串.
+	FString CharacterAttributeJson;
+
+	// 若读取失败则报错.
+	if (!FFileHelper::LoadFileToString(CharacterAttributeJson, *InPath)) {
+		UE_LOG(LogMMOARPGdbServer, Error, TEXT("CharacterAttributeJson File read failed."));
+		return false;
+	}
+
+	// 提前准备JSON读取器和readroot
+	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(CharacterAttributeJson);
+	TArray<TSharedPtr<FJsonValue>> ReadRoot;
+
+	/** 读取器反序列化 */
+	if (FJsonSerializer::Deserialize(JsonReader, ReadRoot)) {
+		
+		/* Lambda--使用外部值注册1个mmo-attributedata */
+		auto RegisterMMOARPGAttributeData = [](FMMOARPGAttributeData& InAttributeData, float InValue) {
+			InAttributeData.BaseValue = InValue;
+			InAttributeData.CurrentValue = InValue;
+		};
+
+		/* Lambda--解析属性集Json文件里各tag部分 */
+		auto RegisterGameplayTag = [](const TArray<TSharedPtr<FJsonValue>>& GamePlayJsonTag, TArray<FName>& OutTag) {
+			TArray<FName> GamePlayTags;
+			for (auto& Tmp : GamePlayJsonTag) {
+				if (TSharedPtr<FJsonObject> InJsonObject = Tmp->AsObject()) {
+					const TArray<TSharedPtr<FJsonValue>>& SubGamePlayJsonTag = InJsonObject->GetArrayField(TEXT("GameplayTags"));
+					for (auto& SubTmp : SubGamePlayJsonTag) {
+						if (TSharedPtr<FJsonObject> InSubJsonObject = SubTmp->AsObject()) {
+							GamePlayTags.Add(*InSubJsonObject->GetStringField(TEXT("TagName")));
+						}
+					}
+				}
+			}
+
+			if (!GamePlayTags.IsEmpty()) {
+// 				AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
+			}
+		};
+
+		// 保护性清零人物属性-缓存池
+		MMOARPGCharacterAttribute.Empty();
+
+		// 扫描Json数据源
+		for (auto& Tmp : ReadRoot) {
+			if (TSharedPtr<FJsonObject> InJsonObject = Tmp->AsObject()) {
+				int32 ID = InJsonObject->GetIntegerField(TEXT("ID"));// 先拿一下人物号.
+				MMOARPGCharacterAttribute.Add(ID, FMMOARPGCharacterAttribute());// 缓存池里先Add个ID-空属性集.
+				FMMOARPGCharacterAttribute& InAttribute = MMOARPGCharacterAttribute[ID];// 再提出 刚才那个人物ID号的 缓存池里的属性集
+
+				// 给提出来的属性集 各部分字段做值.
+				RegisterMMOARPGAttributeData(InAttribute.Level, 1.f);
+				RegisterMMOARPGAttributeData(InAttribute.Health, InJsonObject->GetNumberField(TEXT("Health")));
+				RegisterMMOARPGAttributeData(InAttribute.MaxHealth, InJsonObject->GetNumberField(TEXT("Health")));
+				RegisterMMOARPGAttributeData(InAttribute.Mana, InJsonObject->GetNumberField(TEXT("Mana")));
+				RegisterMMOARPGAttributeData(InAttribute.MaxMana, InJsonObject->GetNumberField(TEXT("Mana")));
+				RegisterMMOARPGAttributeData(InAttribute.PhysicsAttack, InJsonObject->GetNumberField(TEXT("PhysicsAttack")));
+				RegisterMMOARPGAttributeData(InAttribute.MagicAttack, InJsonObject->GetNumberField(TEXT("MagicAttack")));
+				RegisterMMOARPGAttributeData(InAttribute.PhysicsDefense, InJsonObject->GetNumberField(TEXT("PhysicsDefense")));
+				RegisterMMOARPGAttributeData(InAttribute.MagicDefense, InJsonObject->GetNumberField(TEXT("MagicDefense")));
+				RegisterMMOARPGAttributeData(InAttribute.AttackRange, InJsonObject->GetNumberField(TEXT("AttackRange")));
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("ComboAttackTags")), InAttribute.ComboAttack);
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("SkillTags")), InAttribute.Skill);
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("LimbsTags")), InAttribute.Limbs);
+			}
+		}
+		return true;
+	}
+	// 关联此Json文件的JSON读取器 若反序列化失败则报错.
+	UE_LOG(LogMMOARPGdbServer, Error, TEXT("JSON deserialization failed."));
+
+	return true;
 }
