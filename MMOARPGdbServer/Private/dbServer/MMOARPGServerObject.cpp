@@ -73,6 +73,8 @@ void UMMOARPGServerObejct::Init()
 		`user_id` INT UNSIGNED DEFAULT '0',\
 		`character_id` INT UNSIGNED DEFAULT '0',\
 		`mmoarpg_slot` INT UNSIGNED DEFAULT '0',\
+		`Level_Base` double(11,4) DEFAULT '0.00',\
+		`Level_Current` double(11,4) DEFAULT '0.00',\
 		`Health_Base` double(11,4) DEFAULT '0.00',\
 		`Health_Current` double(11,4) DEFAULT '0.00',\
 		`MaxHealth_Base` double(11,4) DEFAULT '0.00',\
@@ -990,20 +992,43 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 	FString	SQL = FString::Printf(TEXT(
 		"INSERT INTO mmoarpg_characters_a (\
 			 character_id,user_id,mmoarpg_slot,\
+			 Level_Base,Level_Current,\
 			 Health_Base,Health_Current,\
 			 MaxHealth_Base,MaxHealth_Current,\
 			 Mana_Base,Mana_Current,\
-			 MaxMana_Base,MaxMana_Current) VALUES(\
-			 %i,%i,%i,\
-			 %.2lf,%.2lf,\
-			 %.2lf,%.2lf,\
-			 %.2lf,%.2lf,\
-			 %.2lf,%.2lf);"),
+			 MaxMana_Base,MaxMana_Current,\
+			 PhysicsAttack_Base,PhysicsAttack_Current,\
+			 MagicAttack_Base,MagicAttack_Current,\
+			 PhysicsDefense_Base,PhysicsDefense_Current,\
+			 MagicDefense_Base,MagicDefense_Current,\
+			 AttackRange_Base,AttackRange_Current,\
+			 ComboAttack,Skill,Limbs) VALUES(\
+			%i,%i,%i,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
+			\"%s\",\"%s\",\"%s\");"),
 		InCharacterID, InUserID, MMOARPG_Slot,
+		InAttributeData.Level.BaseValue, InAttributeData.Level.CurrentValue,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
 		InAttributeData.MaxHealth.BaseValue, InAttributeData.MaxHealth.CurrentValue,
 		InAttributeData.Mana.BaseValue, InAttributeData.Mana.CurrentValue,
-		InAttributeData.MaxMana.BaseValue, InAttributeData.MaxMana.CurrentValue);
+		InAttributeData.MaxMana.BaseValue, InAttributeData.MaxMana.CurrentValue,
+		InAttributeData.PhysicsAttack.BaseValue, InAttributeData.PhysicsAttack.CurrentValue,
+		InAttributeData.MagicAttack.BaseValue, InAttributeData.MagicAttack.CurrentValue,
+		InAttributeData.PhysicsDefense.BaseValue, InAttributeData.PhysicsDefense.CurrentValue,
+		InAttributeData.MagicDefense.BaseValue, InAttributeData.MagicDefense.CurrentValue,
+		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
+		*InAttributeData.ComboAttackToString(),
+		*InAttributeData.SkillToString(),
+		*InAttributeData.LimbsToString());
 
 	if (Post(SQL)) {
 		UE_LOG(LogMMOARPGdbServer, Display, TEXT("INSERT mmoarpg_characters_a true"));
@@ -1018,6 +1043,8 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 {
 	FString SQL = FString::Printf(
 		TEXT("UPDATE mmoarpg_characters_a SET \
+			Level_Base=%.2lf,\
+			Level_Current=%.2lf,\
 			Health_Base=%.2lf,\
 			Health_Current=%.2lf,\
 			MaxHealth_Base=%.2lf,\
@@ -1025,12 +1052,34 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 			Mana_Base=%.2lf,\
 			Mana_Current=%.2lf,\
 			MaxMana_Base=%.2lf,\
-			MaxMana_Current=%.2lf \
+			MaxMana_Current=%.2lf,\
+			PhysicsAttack_Base=%.2lf,\
+			PhysicsAttack_Current=%.2lf,\
+			MagicAttack_Base=%.2lf,\
+			MagicAttack_Current=%.2lf,\
+			PhysicsDefense_Base=%.2lf,\
+			PhysicsDefense_Current=%.2lf,\
+			MagicDefense_Base=%.2lf,\
+			MagicDefense_Current=%.2lf,\
+			AttackRange_Base=%.2lf,\
+			AttackRange_Current=%.2lf,\
+			ComboAttack=\"%s\",\
+			Skill=\"%s\",\
+			Limbs=\"%s\" \
 			WHERE character_id=%i and user_id = %i and mmoarpg_slot=%i;"),
+		InAttributeData.Level.BaseValue, InAttributeData.Level.CurrentValue,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
 		InAttributeData.MaxHealth.BaseValue, InAttributeData.MaxHealth.CurrentValue,
 		InAttributeData.Mana.BaseValue, InAttributeData.Mana.CurrentValue,
 		InAttributeData.MaxMana.BaseValue, InAttributeData.MaxMana.CurrentValue,
+		InAttributeData.PhysicsAttack.BaseValue, InAttributeData.PhysicsAttack.CurrentValue,
+		InAttributeData.MagicAttack.BaseValue, InAttributeData.MagicAttack.CurrentValue,
+		InAttributeData.PhysicsDefense.BaseValue, InAttributeData.PhysicsDefense.CurrentValue,
+		InAttributeData.MagicDefense.BaseValue, InAttributeData.MagicDefense.CurrentValue,
+		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
+		*InAttributeData.ComboAttackToString(),
+		*InAttributeData.SkillToString(),
+		*InAttributeData.LimbsToString(),
 		InCharacterID, InUserID, MMOARPG_Slot);
 
 	if (Post(SQL)) {
