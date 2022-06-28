@@ -451,8 +451,13 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 
 					if (bCreateCharacter == true) {
 						// 创建角色属性集
-						FMMOARPGCharacterAttribute CharacterAttribute;
-						bCreateCharacter = CreateAndUpdateCharacterAttributeInfo(UserID, 1, CharacterAttribute, CA_receive.SlotPosition);
+						if (FMMOARPGCharacterAttribute* InCharacterAttribute = MMOARPGCharacterAttribute.Find(1)) {// 若属性集缓存池里找到人物号为1的
+							bCreateCharacter = CreateAndUpdateCharacterAttributeInfo(UserID, 1, *InCharacterAttribute, CA_receive.SlotPosition);
+						}
+						else {// 若 没有在属性集缓存池里找到人物号为1的
+							bCreateCharacter = false;
+							UE_LOG(LogMMOARPGdbServer, Display, TEXT("The data of player 1 cannot be found in the attribute table. Check whether the attribute table exists."));
+						}
 					}
 
 					// 处理完之后 把Response 发回至 Gate-dbClient

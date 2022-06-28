@@ -77,7 +77,7 @@ protected:
 	USimpleMysqlObject* MysqlObjectRead;// 数据库对象:读
 	USimpleMysqlObject* MysqlObjectWrite;// 数据库对象:写
 
-	// 人物属性 缓存池, 1个ID对应1块人物属性.
+	// 人物属性 缓存池, 1个人物号对应1块人物属性.
 	static TMap<int32, FMMOARPGCharacterAttribute> MMOARPGCharacterAttribute;
 
 };
