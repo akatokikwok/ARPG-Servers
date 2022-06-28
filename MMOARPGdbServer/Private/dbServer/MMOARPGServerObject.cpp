@@ -80,6 +80,19 @@ void UMMOARPGServerObejct::Init()
 		`Mana_Current` double(11,4) DEFAULT '0.00',\
 		`MaxMana_Base` double(11,4) DEFAULT '0.00',\
 		`MaxMana_Current` double(11,4) DEFAULT '0.00',\
+		`PhysicsAttack_Base` double(11,4) DEFAULT '0.00',\
+		`PhysicsAttack_Current` double(11,4) DEFAULT '0.00',\
+		`MagicAttack_Base` double(11,4) DEFAULT '0.00',\
+		`MagicAttack_Current` double(11,4) DEFAULT '0.00',\
+		`PhysicsDefense_Base` double(11,4) DEFAULT '0.00',\
+		`PhysicsDefense_Current` double(11,4) DEFAULT '0.00',\
+		`MagicDefense_Base` double(11,4) DEFAULT '0.00',\
+		`MagicDefense_Current` double(11,4) DEFAULT '0.00',\
+		`AttackRange_Base` double(11,4) DEFAULT '0.00',\
+		`AttackRange_Current` double(11,4) DEFAULT '0.00',\
+		`ComboAttack` VARCHAR(256) NOT NULL,\
+		`Skill` VARCHAR(256) NOT NULL,\
+		`Limbs` VARCHAR(256) NOT NULL,\
 		 PRIMARY KEY(`id`)\
 		) ENGINE = INNODB DEFAULT CHARSET = utf8; ");
 	if (!Post(Create_mmoarpg_character_a_SQL)) {
@@ -566,10 +579,20 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && MMOARPG_Slot != INDEX_NONE) {
 				/* 从DB上拉取数据, 以此构造1个GAS玩家属性集*/
-				FMMOARPGCharacterAttribute CharacterAttribute;
+
+				FMMOARPGCharacterAttribute CharacterAttribute;// 构造出的人物属性集.
 				{
 					if (!IsCharacterAttributeExit(UserID, CharacterID, MMOARPG_Slot)) {/* 不存在属性集就直接创建.*/
-						CreateCharacterAttributeInfo(UserID, CharacterID, CharacterAttribute, MMOARPG_Slot);
+						if (FMMOARPGCharacterAttribute* InCharacterAttribute = MMOARPGCharacterAttribute.Find(CharacterID)) {
+							CharacterAttribute = *InCharacterAttribute;// 拿到缓存池里的对应人物号的属性集.
+						}
+
+						if (CreateCharacterAttributeInfo(UserID, CharacterID, CharacterAttribute, MMOARPG_Slot)) {
+							UE_LOG(LogMMOARPGdbServer, Display, TEXT("Data table [%i] created successfully"), CharacterID);
+						}
+						else {
+							UE_LOG(LogMMOARPGdbServer, Error, TEXT("Failed to create data table[%i]."), CharacterID);
+						}
 					}
 					else {
 						FString SQL = FString::Printf(TEXT("SELECT * FROM `mmoarpg_characters_a` WHERE user_id = %i and character_id=%i and mmoarpg_slot=%i;"), UserID, CharacterID, MMOARPG_Slot);
@@ -581,6 +604,17 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 									GetAttributeInfo(TEXT("MaxHealth"), CharacterAttribute.MaxHealth, Tmp.Rows);
 									GetAttributeInfo(TEXT("Mana"), CharacterAttribute.Mana, Tmp.Rows);
 									GetAttributeInfo(TEXT("MaxMana"), CharacterAttribute.MaxMana, Tmp.Rows);
+
+									GetAttributeInfo(TEXT("PhysicsAttack"), CharacterAttribute.PhysicsAttack, Tmp.Rows);
+									GetAttributeInfo(TEXT("MagicAttack"), CharacterAttribute.MagicAttack, Tmp.Rows);
+									GetAttributeInfo(TEXT("PhysicsDefense"), CharacterAttribute.PhysicsDefense, Tmp.Rows);
+									GetAttributeInfo(TEXT("MagicDefense"), CharacterAttribute.MagicDefense, Tmp.Rows);
+									GetAttributeInfo(TEXT("AttackRange"), CharacterAttribute.AttackRange, Tmp.Rows);
+									GetAttributeInfo(TEXT("Level"), CharacterAttribute.Level, Tmp.Rows);
+
+									GetAttributeInfo(TEXT("ComboAttack"), CharacterAttribute.ComboAttack, Tmp.Rows);
+									GetAttributeInfo(TEXT("Skill"), CharacterAttribute.Skill, Tmp.Rows);
+									GetAttributeInfo(TEXT("Limbs"), CharacterAttribute.Limbs, Tmp.Rows);
 								}
 							}
 						}
@@ -894,7 +928,7 @@ void UMMOARPGServerObejct::GetSerialString(TCHAR* InSplitPrefix, const TArray<FS
 	OutString.RemoveFromEnd(TEXT(","));
 }
 
-// 工具方法;
+// 工具方法,拿取属性集,同名重载
 void UMMOARPGServerObejct::GetAttributeInfo(const FString& InAttributeName, FMMOARPGAttributeData& OutAttributeData, const TMap<FString, FString>& InRow)
 {
 	if (const FString* InBase = InRow.Find(InAttributeName + TEXT("_Base"))) {
@@ -903,6 +937,14 @@ void UMMOARPGServerObejct::GetAttributeInfo(const FString& InAttributeName, FMMO
 
 	if (const FString* InCurrent = InRow.Find(InAttributeName + TEXT("_Current"))) {
 		OutAttributeData.CurrentValue = FCString::Atof(**InCurrent);
+	}
+}
+
+// 工具方法,拿取属性集,同名重载
+void UMMOARPGServerObejct::GetAttributeInfo(const FString& InAttributeName, TArray<FName>& OutAttributeData, const TMap<FString, FString>& InRowMap)
+{
+	if (const FString* InBase = InRowMap.Find(InAttributeName)) {
+		NetDataAnalysis::AnalysisToArrayName(*InBase, OutAttributeData);
 	}
 }
 

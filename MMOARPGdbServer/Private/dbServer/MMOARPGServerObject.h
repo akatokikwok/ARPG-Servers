@@ -52,8 +52,11 @@ private:
 	// 将字符集输出成满足 s1, s2, s3, s4的形式.
 	void GetSerialString(TCHAR* InSplitPrefix, const TArray<FString>& InStrings, FString& OutString);
 
-	// 工具方法1;
+	// 工具方法,拿取属性集,同名重载
 	void GetAttributeInfo(const FString& InAttributeName, FMMOARPGAttributeData& OutAttributeData, const TMap<FString, FString>& InRow);
+
+	// 工具方法,拿取属性集,同名重载
+	void GetAttributeInfo(const FString& InAttributeName, TArray<FName>& OutAttributeData, const TMap<FString, FString>& InRow);
 
 	// 工具方法; 判断角色属性集是否存在.
 	bool IsCharacterAttributeExit(int32 InUserID, int32 InCharacterID, int32 MMOARPG_Slot);
