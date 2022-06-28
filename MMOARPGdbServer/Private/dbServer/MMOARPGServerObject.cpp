@@ -11,6 +11,7 @@
 #include "MMOARPGType.h"
 #include "Misc/FileHelper.h"
 #include "Json.h"
+#include "MMOARPGTagList.h"// 这个是引擎插件里的
 
 #if PLATFORM_WINDOWS
 #pragma optimize("",off) 
@@ -1071,7 +1072,7 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 		};
 
 		/* Lambda--解析属性集Json文件里各tag部分 */
-		auto RegisterGameplayTag = [](const TArray<TSharedPtr<FJsonValue>>& GamePlayJsonTag, TArray<FName>& OutTag) {
+		auto RegisterGameplayTag = [](const TArray<TSharedPtr<FJsonValue>>& GamePlayJsonTag, TArray<FName>& OutTag) ->void {
 			TArray<FName> GamePlayTags;
 			for (auto& Tmp : GamePlayJsonTag) {
 				if (TSharedPtr<FJsonObject> InJsonObject = Tmp->AsObject()) {
@@ -1079,6 +1080,8 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 					for (auto& SubTmp : SubGamePlayJsonTag) {
 						if (TSharedPtr<FJsonObject> InSubJsonObject = SubTmp->AsObject()) {
 							GamePlayTags.Add(*InSubJsonObject->GetStringField(TEXT("TagName")));
+
+							AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
 						}
 					}
 				}
