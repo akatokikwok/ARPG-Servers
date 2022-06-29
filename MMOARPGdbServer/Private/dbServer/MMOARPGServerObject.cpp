@@ -1132,21 +1132,22 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 		 * (MMOARPGTagList.h 负责对Project Settings里的各个技能Tag执行反射与约定形式的转位解析)
 		 */
 		auto RegisterGameplayTag = [](const TArray<TSharedPtr<FJsonValue>>& GamePlayJsonTag, TArray<FName>& OutTag) ->void {
+			TArray<FName> GamePlayTags;
 			for (auto& Tmp : GamePlayJsonTag) {
 				if (TSharedPtr<FJsonObject> InJsonObject = Tmp->AsObject()) {
 					const TArray<TSharedPtr<FJsonValue>>& SubGamePlayJsonTag = InJsonObject->GetArrayField(TEXT("GameplayTags"));
 					for (auto& SubTmp : SubGamePlayJsonTag) {
 						if (TSharedPtr<FJsonObject> InSubJsonObject = SubTmp->AsObject()) {
-							TArray<FName> GamePlayTags;
 							GamePlayTags.Add(*InSubJsonObject->GetStringField(TEXT("TagName")));
-							AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
+// 							AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
 						}
 					}
 				}
 			}
-// 			if (!GamePlayTags.IsEmpty()) {
-// 				AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
-// 			}
+			// 将所有GTag合成一个更大的数组
+			if (!GamePlayTags.IsEmpty()) {
+				AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
+			}
 		};
 
 		// 保护性清零人物属性-缓存池
