@@ -1125,25 +1125,28 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 			InAttributeData.CurrentValue = InValue;
 		};
 
-		/* Lambda--解析属性集Json文件里各tag部分 */
+		/**Lambda--RegisterGameplayTag
+		 * 负责将 "CharacterAttribute.json文件里的 各形式的技能数组解析为 
+		 * MMOARPGTagList.h里枚举EGamePlayTags0内各字段的十六进制值"
+		 * (MMOARPGTagList.h 由插件SimpleCombatEditor Module反射而成,并非人为编写)
+		 * (MMOARPGTagList.h 负责对Project Settings里的各个技能Tag执行反射与约定形式的转位解析)
+		 */
 		auto RegisterGameplayTag = [](const TArray<TSharedPtr<FJsonValue>>& GamePlayJsonTag, TArray<FName>& OutTag) ->void {
-			TArray<FName> GamePlayTags;
 			for (auto& Tmp : GamePlayJsonTag) {
 				if (TSharedPtr<FJsonObject> InJsonObject = Tmp->AsObject()) {
 					const TArray<TSharedPtr<FJsonValue>>& SubGamePlayJsonTag = InJsonObject->GetArrayField(TEXT("GameplayTags"));
 					for (auto& SubTmp : SubGamePlayJsonTag) {
 						if (TSharedPtr<FJsonObject> InSubJsonObject = SubTmp->AsObject()) {
+							TArray<FName> GamePlayTags;
 							GamePlayTags.Add(*InSubJsonObject->GetStringField(TEXT("TagName")));
-
 							AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
 						}
 					}
 				}
 			}
-
-			if (!GamePlayTags.IsEmpty()) {
+// 			if (!GamePlayTags.IsEmpty()) {
 // 				AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
-			}
+// 			}
 		};
 
 		// 保护性清零人物属性-缓存池
