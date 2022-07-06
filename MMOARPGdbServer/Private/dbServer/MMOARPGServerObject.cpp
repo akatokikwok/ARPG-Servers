@@ -60,7 +60,9 @@ void UMMOARPGServerObejct::Init()
 		`Leg_Size` double(11,4) DEFAULT '0.00',\
 		`Waist_Size` double(11,4) DEFAULT '0.00',\
 		`Arm_Size` double(11,4) DEFAULT '0.00',\
-		PRIMARY KEY(`id`)\
+		`Head_Size` double(11,4) DEFAULT '0.00',\
+		`Chest_Size` double(11,4) DEFAULT '0.00',\
+		 PRIMARY KEY(`id`)\
 		) ENGINE = INNODB DEFAULT CHARSET = utf8mb4; ");
 	if (!Post(Create_mmoarpg_character_ca_SQL)) {
 		UE_LOG(LogMMOARPGdbServer, Error, TEXT("we create table mmoarpg_characters_ca failed."));// 如果Post失败就打印提示 创表失败.
@@ -250,7 +252,7 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
-		/** 舞台人物造型请求. */
+		/** (捏脸, 捏外貌身材) 舞台人物造型请求. */
 		case SP_CharacterAppearanceRequests:// 收到协议: 来自网关转发的客户端玩家形象协议.
 		{
 			// 接收到来自网关转发的客户端玩家形象 Request协议.
@@ -303,6 +305,12 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 								}
 								if (FString* InArmSize = Tmp.Rows.Find(TEXT("arm_size"))) {
 									InLast.ArmSize = FCString::Atof(**InArmSize);
+								}
+								if (FString* InHeadSize = Tmp.Rows.Find(TEXT("head_size"))) {
+									InLast.HeadSize = FCString::Atof(**InHeadSize);
+								}
+								if (FString* InChestSize = Tmp.Rows.Find(TEXT("chest_size"))) {
+									InLast.ChestSize = FCString::Atof(**InChestSize);
 								}
 							}
 						}
@@ -393,10 +401,11 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 						if (bCreateCharacter == true)/* 仅当有创建信号. */
 						{
 							FString SQL = FString::Printf(TEXT("INSERT INTO mmoarpg_characters_ca(\
-								mmoarpg_name,mmoarpg_date,mmoarpg_slot,leg_size,waist_size,arm_size) \
-								VALUES(\"%s\",\"%s\",%i,%.2lf,%.2lf,%.2lf);"),// 使用长浮点型,增大带宽.
+								mmoarpg_name,mmoarpg_date,mmoarpg_slot,leg_size,waist_size,arm_size,head_size,chest_size) \
+								VALUES(\"%s\",\"%s\",%i,%.2lf,%.2lf,%.2lf,%.2lf,%.2lf);"),// 使用长浮点型,增大带宽.
 								*CA_receive.Name, *CA_receive.Date, CA_receive.SlotPosition,
-								CA_receive.LegSize, CA_receive.WaistSize, CA_receive.ArmSize);
+								CA_receive.LegSize, CA_receive.WaistSize, CA_receive.ArmSize, 
+								CA_receive.HeadSize, CA_receive.ChestSize);
 
 							// 向数据库提交这条插入命令如果成功.就把语句刷新为按名字查找.
 							if (Post(SQL)) {
@@ -594,9 +603,9 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 					SQL = FString::Printf(
 						TEXT("UPDATE mmoarpg_characters_ca \
 							SET mmoarpg_name=\"%s\" ,mmoarpg_date=\"%s\",mmoarpg_slot=%i,\
-							leg_size=%.2lf,waist_size=%.2lf,arm_size=%.2lf WHERE id=%i"),
+							leg_size=%.2lf,waist_size=%.2lf,arm_size=%.2lf,head_size=%.2lf,chest_size=%.2lf WHERE id=%i"),
 						*CA.Name, *CA.Date, CA.SlotPosition,
-						CA.LegSize, CA.WaistSize, CA.ArmSize, UpdateID);
+						CA.LegSize, CA.WaistSize, CA.ArmSize, CA.HeadSize, CA.ChestSize, UpdateID);
 
 					bool bUpdateSucceeded = false;
 					if (Post(SQL)) {
@@ -957,6 +966,12 @@ bool UMMOARPGServerObejct::GetSlotCAInfo(int32 InUserID, int32 InSlotCAID, FStri
 					}
 					if (FString* InArmSize = Tmp.Rows.Find(TEXT("arm_size"))) {
 						CA.ArmSize = FCString::Atof(**InArmSize);
+					}
+					if (FString* InHeadSize = Tmp.Rows.Find(TEXT("head_size"))) {
+						CA.HeadSize = FCString::Atof(**InHeadSize);
+					}
+					if (FString* InChestSize = Tmp.Rows.Find(TEXT("chest_size"))) {
+						CA.ChestSize = FCString::Atof(**InChestSize);
 					}
 				}
 				// 把CA存档压缩成Json包.
