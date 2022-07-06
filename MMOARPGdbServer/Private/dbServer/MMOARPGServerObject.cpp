@@ -550,6 +550,69 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 二次编辑角色存档 */
+		case SP_EditorCharacterRequests:
+		{
+			int32 UserID = INDEX_NONE;
+			FSimpleAddrInfo AddrInfo;
+			FString JsonString;
+
+			//拿到客户端发送的账号
+			SIMPLE_PROTOCOLS_RECEIVE(SP_EditorCharacterRequests, UserID, JsonString, AddrInfo);
+			if (UserID > 0 && JsonString.Len() > 0) {
+				FMMOARPGCharacterAppearance CA;
+				NetDataAnalysis::StringToCharacterAppearances(JsonString, CA);
+
+				//I 获取元数据
+				FString SQL = FString::Printf(TEXT("SELECT meta_value FROM wp_usermeta WHERE meta_key=\"character_ca\" and User_id=%i;"), UserID);
+				TArray<FSimpleMysqlResult> Result;
+				FString IDs;
+				if (Get(SQL, Result)) {
+					if (Result.Num() > 0) {
+						for (auto& Tmp : Result) {
+							if (FString* InMetaValue = Tmp.Rows.Find(TEXT("meta_value"))) {
+								IDs = InMetaValue->Replace(TEXT("|"), TEXT(","));
+							}
+						}
+					}
+				}
+
+				SQL = FString::Printf(TEXT("SELECT id FROM mmoarpg_characters_ca WHERE mmoarpg_slot=%i and id in (%s)"), CA.SlotPosition, *IDs);
+				Result.Empty();
+				int32 UpdateID = INDEX_NONE;
+				if (Get(SQL, Result)) {
+					if (Result.Num() > 0) {
+						for (auto& Tmp : Result) {
+							if (FString* InidValue = Tmp.Rows.Find(TEXT("id"))) {
+								UpdateID = FCString::Atoi(**InidValue);
+							}
+						}
+					}
+				}
+
+				if (UpdateID != INDEX_NONE) {
+					SQL = FString::Printf(
+						TEXT("UPDATE mmoarpg_characters_ca \
+							SET mmoarpg_name=\"%s\" ,mmoarpg_date=\"%s\",mmoarpg_slot=%i,\
+							leg_size=%.2lf,waist_size=%.2lf,arm_size=%.2lf WHERE id=%i"),
+						*CA.Name, *CA.Date, CA.SlotPosition,
+						CA.LegSize, CA.WaistSize, CA.ArmSize, UpdateID);
+
+					bool bUpdateSucceeded = false;
+					if (Post(SQL)) {
+						bUpdateSucceeded = true;
+						SIMPLE_PROTOCOLS_SEND(SP_EditorCharacterResponses, bUpdateSucceeded, AddrInfo);
+						UE_LOG(LogMMOARPGdbServer, Display, TEXT("SP_EditorCharacterResponses true"));
+					}
+					else {
+						SIMPLE_PROTOCOLS_SEND(SP_EditorCharacterResponses, bUpdateSucceeded, AddrInfo);
+						UE_LOG(LogMMOARPGdbServer, Display, TEXT("SP_EditorCharacterResponses false"));
+					}
+				}
+			}
+			break;
+		}
+
 		/** 玩家注册 */
 		case SP_PlayerRegistInfoRequests:
 		{

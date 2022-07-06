@@ -83,6 +83,22 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_SERVER_SEND(GateServer, SP_DeleteCharacterResponses, AddrInfo, UserID, SlotID, SuccessDeleteCount);
 
 			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_DeleteCharacterResponses]"));
+			break;
+		}
+
+		/** 二次编辑CA存档 */
+		case SP_EditorCharacterResponses:
+		{
+			FSimpleAddrInfo AddrInfo;
+			bool bUpdateSucceeded = false;
+
+			//拿到客户端发送的账号
+			SIMPLE_PROTOCOLS_RECEIVE(SP_EditorCharacterResponses, bUpdateSucceeded, AddrInfo);
+
+			SIMPLE_SERVER_SEND(GateServer, SP_EditorCharacterResponses, AddrInfo, bUpdateSucceeded);
+
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_EditorCharacterResponses]"));
+			break;
 		}
 	}
 }

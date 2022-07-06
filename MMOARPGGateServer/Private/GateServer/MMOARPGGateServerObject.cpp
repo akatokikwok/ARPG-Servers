@@ -125,6 +125,24 @@ void UMMOARPGGateServerObject::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
+		/** 编辑CA存档 */
+		case SP_EditorCharacterRequests:
+		{
+			int32 PlayerID = INDEX_NONE;
+			FString JsonString;
+
+			//拿到客户端发送的账号
+			SIMPLE_PROTOCOLS_RECEIVE(SP_EditorCharacterRequests, PlayerID, JsonString);
+
+			FSimpleAddrInfo AddrInfo;
+			GetAddrInfo(AddrInfo);
+
+			SIMPLE_CLIENT_SEND(dbClient, SP_EditorCharacterRequests, PlayerID, JsonString, AddrInfo);
+
+			UE_LOG(LogMMOARPGGateServer, Display, TEXT("[SP_EditorCharacterRequests] UserID = %i JsonString=[%s]"), PlayerID, *JsonString);
+			break;
+		}
+
 		/** 跳转至DS. */
 		case SP_LoginToDSServerRequests:
 		{
