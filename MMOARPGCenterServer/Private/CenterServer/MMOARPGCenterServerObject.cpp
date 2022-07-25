@@ -10,6 +10,12 @@
 TMap<int32, FMMOARPGPlayerRegistInfo> UMMOARPGCenterServerObject::PlayerRegistInfos;
 TMap<FSimpleAddr, FMMOARPGDicatedServerInfo> UMMOARPGCenterServerObject::DicatedServerInfos;
 
+UMMOARPGCenterServerObject::UMMOARPGCenterServerObject()
+	: LinkType(ECentralServerLinkType::GAME_PLAYER_LINK)
+{
+
+}
+
 void UMMOARPGCenterServerObject::Init()
 {
 	Super::Init();
@@ -142,7 +148,25 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
-		/**  */
+		/** 身份覆写协议. */
+		case SP_IdentityReplicationRequests:
+		{
+			FString IP;
+			uint32 Port = 0;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_IdentityReplicationRequests, IP, Port);
+
+			bool bIdentityReplication = false;// 是否命中身份响应.
+			if (Port != 0 && !IP.IsEmpty()) {
+				// 修改CS链接类型为DS链入.
+				LinkType = ECentralServerLinkType::GAME_DEDICATED_SERVER_LINK;
+
+				FMMOARPGDicatedServerInfo ServerInfo;// 欲填充的DS.
+				AddDicatedServerRegistInfo(IP, Port, ServerInfo);
+				bIdentityReplication = true;
+			}
+			SIMPLE_PROTOCOLS_SEND(SP_IdentityReplicationResponses, bIdentityReplication);
+			break;
+		}
 	}
 }
 
@@ -197,6 +221,12 @@ FMMOARPGPlayerRegistInfo* UMMOARPGCenterServerObject::FindPlayerData(int32 InUse
 void UMMOARPGCenterServerObject::AddDicatedServerRegistInfo(const FSimpleAddr& InAddr, const FMMOARPGDicatedServerInfo& InDicatedServerInfo)
 {
 	DicatedServerInfos.Add(InAddr, InDicatedServerInfo);
+}
+
+void UMMOARPGCenterServerObject::AddDicatedServerRegistInfo(const FString& InIP, const int32 InPort, const FMMOARPGDicatedServerInfo& InDicatedServerInfo)
+{
+	const FSimpleAddr InAddr = FSimpleNetManage::GetSimpleAddr(*InIP, InPort);
+	AddDicatedServerRegistInfo(InAddr, InDicatedServerInfo);
 }
 
 bool UMMOARPGCenterServerObject::RemoveDicatedServerInfo(const FSimpleAddr& InAddr)

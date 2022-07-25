@@ -12,6 +12,7 @@ class UMMOARPGCenterServerObject : public USimpleController
 	GENERATED_BODY()
 
 public:
+	UMMOARPGCenterServerObject();
 	virtual void Init();
 	virtual void Tick(float DeltaTime);
 	virtual void Close();
@@ -27,6 +28,7 @@ public:
 	static FMMOARPGPlayerRegistInfo* FindPlayerData(int32 InUserID);
 
 	// 往DS池子里添加元素.
+	static void AddDicatedServerRegistInfo(const FString& InIP, const int32 InPort, const FMMOARPGDicatedServerInfo& InDicatedServerInfo);
 	static void AddDicatedServerRegistInfo(const FSimpleAddr& InAddr, const FMMOARPGDicatedServerInfo& InDicatedServerInfo);
 	// 移除DS池子里元素.
 	static bool RemoveDicatedServerInfo(const FSimpleAddr& InAddr);
@@ -36,6 +38,8 @@ public:
 	// 寻找DS地址.
 	static FSimpleAddr* FindDicatedServerAddr();
 
+	// 获取CS链接类型.
+	ECentralServerLinkType GetLinkType() { return LinkType; }
 private:
 	/**
 	 * 原理:由于CS和单个客户端相链接时会创建Channel.
@@ -47,4 +51,7 @@ private:
 
 	/** DS池子. */
 	static TMap<FSimpleAddr, FMMOARPGDicatedServerInfo> DicatedServerInfos;
+
+	/** CS链接类型. */
+	ECentralServerLinkType LinkType;
 };
