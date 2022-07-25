@@ -31,7 +31,7 @@ public:
 	static void AddDicatedServerRegistInfo(const FString& InIP, const int32 InPort, const FMMOARPGDicatedServerInfo& InDicatedServerInfo);
 	static void AddDicatedServerRegistInfo(const FSimpleAddr& InAddr, const FMMOARPGDicatedServerInfo& InDicatedServerInfo);
 	// 移除DS池子里元素.
-	static bool RemoveDicatedServerInfo(const FSimpleAddr& InAddr);
+	static int32 RemoveDicatedServerInfo(const FSimpleAddr& InAddr);
 	// DS池子里查找元素.
 	static const FMMOARPGDicatedServerInfo* FindDicatedServerInfo(const FSimpleAddr& InAddr);
 	static const FMMOARPGDicatedServerInfo* FindDicatedServerInfo(const FString& InIP, const int32 InPort);
@@ -54,4 +54,7 @@ private:
 
 	/** CS链接类型. */
 	ECentralServerLinkType LinkType;
+
+	/** DS地址 */
+	FSimpleAddr DicatedServerKey;
 };

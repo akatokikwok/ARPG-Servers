@@ -37,7 +37,13 @@ void UMMOARPGCenterServerObject::Tick(float DeltaTime)
 void UMMOARPGCenterServerObject::Close()
 {
 	Super::Close();
+	// 断开或超时检测.
+	if (GetLinkType() == ECentralServerLinkType::GAME_DEDICATED_SERVER_LINK) {
+		RemoveDicatedServerInfo(DicatedServerKey);
 
+		UE_LOG(LogMMOARPGCenterServer, Error, TEXT("[%s]A dedicated server has lost its link."),
+			*FSimpleNetManage::GetAddrString(DicatedServerKey));
+	}
 }
 
 void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
@@ -161,8 +167,13 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 				LinkType = ECentralServerLinkType::GAME_DEDICATED_SERVER_LINK;
 
 				FMMOARPGDicatedServerInfo ServerInfo;// 欲填充的DS.
-				AddDicatedServerRegistInfo(IP, Port, ServerInfo);
+				DicatedServerKey = FSimpleNetManage::GetSimpleAddr(*IP, Port);
+				AddDicatedServerRegistInfo(DicatedServerKey, ServerInfo);
 				bIdentityReplication = true;
+				UE_LOG(LogMMOARPGCenterServer, Display, TEXT("New DS server address accepted. IP = %s, Port=%i;"), *IP, Port);
+			}
+			else {
+				UE_LOG(LogMMOARPGCenterServer, Display, TEXT("DS server address acceptance error, please check the acceptance status. IP = %s, Port=%i;"), *IP, Port);
 			}
 			SIMPLE_PROTOCOLS_SEND(SP_IdentityReplicationResponses, bIdentityReplication);
 			break;
@@ -229,7 +240,7 @@ void UMMOARPGCenterServerObject::AddDicatedServerRegistInfo(const FString& InIP,
 	AddDicatedServerRegistInfo(InAddr, InDicatedServerInfo);
 }
 
-bool UMMOARPGCenterServerObject::RemoveDicatedServerInfo(const FSimpleAddr& InAddr)
+int32 UMMOARPGCenterServerObject::RemoveDicatedServerInfo(const FSimpleAddr& InAddr)
 {
 	return DicatedServerInfos.Remove(InAddr);
 }
