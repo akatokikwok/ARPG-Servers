@@ -8,6 +8,13 @@
 
 
 TMap<int32, FMMOARPGPlayerRegistInfo> UMMOARPGCenterServerObject::PlayerRegistInfos;
+TMap<FSimpleAddr, FMMOARPGDicatedServerInfo> UMMOARPGCenterServerObject::DicatedServerInfos;
+
+UMMOARPGCenterServerObject::UMMOARPGCenterServerObject()
+	: LinkType(ECentralServerLinkType::GAME_PLAYER_LINK)
+{
+
+}
 
 void UMMOARPGCenterServerObject::Init()
 {
@@ -30,7 +37,13 @@ void UMMOARPGCenterServerObject::Tick(float DeltaTime)
 void UMMOARPGCenterServerObject::Close()
 {
 	Super::Close();
+	// 断开或超时检测.
+	if (GetLinkType() == ECentralServerLinkType::GAME_DEDICATED_SERVER_LINK) {
+		RemoveDicatedServerInfo(DicatedServerKey);
 
+		UE_LOG(LogMMOARPGCenterServer, Error, TEXT("[%s]A dedicated server has lost its link."),
+			*FSimpleNetManage::GetAddrString(DicatedServerKey));
+	}
 }
 
 void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
@@ -64,12 +77,12 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_PlayerQuitRequests, UserID);
 
 			if (UserID != INDEX_NONE) {
-				
+
 				/* 退出游戏的时候, 把用户的属性集记录下来压成JSON发给上一层CS-dbclient. */
 				if (FMMOARPGPlayerRegistInfo* InPlayerInfo = FindPlayerData(UserID)) {
 					if (InPlayerInfo->CharacterAttributes.Num() > 0) {
 						FString JsonString;
- 						NetDataAnalysis::MMOARPGCharacterAttributeToString(InPlayerInfo->CharacterAttributes, JsonString);
+						NetDataAnalysis::MMOARPGCharacterAttributeToString(InPlayerInfo->CharacterAttributes, JsonString);
 						// 从CS发给CS-dbclient;
 						SIMPLE_CLIENT_SEND(dbClient, SP_UpdateCharacterDataRequests, UserID, InPlayerInfo->CAInfo.SlotPosition, JsonString);
 					}
@@ -106,7 +119,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			}
 			break;
 		}
-		
+
 		/** GAS人物属性集请求. */
 		case SP_GetCharacterDataRequests:
 		{
@@ -116,12 +129,12 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_RECEIVE(SP_GetCharacterDataRequests, UserID, CharacterID, MMOARPGSlot);
 
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
-				
+
 				FString CharacterDataJsonString;
 				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {/* 是哪个用户的信息*/
 					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {/* 哪个用户的哪个单独角色的属性集*/
 						/* 找到了玩家属性集就将其压缩成JSON 并给这个response发送出去.*/
-						
+
 						NetDataAnalysis::MMOARPGCharacterAttributeToString(*InCharacterAttribute, CharacterDataJsonString);
 						SIMPLE_PROTOCOLS_SEND(SP_GetCharacterDataResponses, UserID, CharacterDataJsonString);
 					}
@@ -141,7 +154,30 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			break;
 		}
 
-		/**  */
+		/** 身份覆写协议. */
+		case SP_IdentityReplicationRequests:
+		{
+			FString IP;
+			uint32 Port = 0;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_IdentityReplicationRequests, IP, Port);
+
+			bool bIdentityReplication = false;// 是否命中身份响应.
+			if (Port != 0 && !IP.IsEmpty()) {
+				// 修改CS链接类型为DS链入.
+				LinkType = ECentralServerLinkType::GAME_DEDICATED_SERVER_LINK;
+
+				FMMOARPGDicatedServerInfo ServerInfo;// 欲填充的DS.
+				DicatedServerKey = FSimpleNetManage::GetSimpleAddr(*IP, Port);
+				AddDicatedServerRegistInfo(DicatedServerKey, ServerInfo);
+				bIdentityReplication = true;
+				UE_LOG(LogMMOARPGCenterServer, Display, TEXT("New DS server address accepted. IP = %s, Port=%i;"), *IP, Port);
+			}
+			else {
+				UE_LOG(LogMMOARPGCenterServer, Display, TEXT("DS server address acceptance error, please check the acceptance status. IP = %s, Port=%i;"), *IP, Port);
+			}
+			SIMPLE_PROTOCOLS_SEND(SP_IdentityReplicationResponses, bIdentityReplication);
+			break;
+		}
 	}
 }
 
@@ -193,3 +229,40 @@ FMMOARPGPlayerRegistInfo* UMMOARPGCenterServerObject::FindPlayerData(int32 InUse
 	return nullptr;
 }
 
+void UMMOARPGCenterServerObject::AddDicatedServerRegistInfo(const FSimpleAddr& InAddr, const FMMOARPGDicatedServerInfo& InDicatedServerInfo)
+{
+	DicatedServerInfos.Add(InAddr, InDicatedServerInfo);
+}
+
+void UMMOARPGCenterServerObject::AddDicatedServerRegistInfo(const FString& InIP, const int32 InPort, const FMMOARPGDicatedServerInfo& InDicatedServerInfo)
+{
+	const FSimpleAddr InAddr = FSimpleNetManage::GetSimpleAddr(*InIP, InPort);
+	AddDicatedServerRegistInfo(InAddr, InDicatedServerInfo);
+}
+
+int32 UMMOARPGCenterServerObject::RemoveDicatedServerInfo(const FSimpleAddr& InAddr)
+{
+	return DicatedServerInfos.Remove(InAddr);
+}
+
+const FMMOARPGDicatedServerInfo* UMMOARPGCenterServerObject::FindDicatedServerInfo(const FSimpleAddr& InAddr)
+{
+	return DicatedServerInfos.Find(InAddr);
+}
+
+const FMMOARPGDicatedServerInfo* UMMOARPGCenterServerObject::FindDicatedServerInfo(const FString& InIP, const int32 InPort)
+{
+	// 	// 先写死1个服务器机器IP地址.暂设为本地本机IP,不用服务器机器.
+	// 	FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("47.102.213.42"), 7777);
+
+	const FSimpleAddr InAddr = FSimpleNetManage::GetSimpleAddr(*InIP, InPort);
+	return DicatedServerInfos.Find(InAddr);
+}
+
+FSimpleAddr* UMMOARPGCenterServerObject::FindDicatedServerAddr()
+{
+	for (auto& Tmp : DicatedServerInfos) {
+		return &Tmp.Key;
+	}
+	return nullptr;
+}

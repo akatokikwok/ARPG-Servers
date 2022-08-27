@@ -53,8 +53,17 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 // 					FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("192.168.2.30"), 7777);// 先写死1个服务器机器IP地址.
 
 					// 先写死1个服务器机器IP地址.暂设为本地本机IP,不用服务器机器.
-					FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("47.102.213.42"), 7777);
-					SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, DsAddr);
+// 					FSimpleAddr DsAddr = FSimpleNetManage::GetSimpleAddr(TEXT("47.102.213.42"), 7777);
+					
+					// 有DS地址就传DS地址,没地址就传1个本地.
+					if (FSimpleAddr* DsAddr = UMMOARPGCenterServerObject::FindDicatedServerAddr()) {
+						SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, *DsAddr);
+					}
+					else {
+						FSimpleAddr LocalDSAddr = FSimpleNetManage::GetSimpleAddr(TEXT("127.0.0.1"), 7777);
+						SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, LocalDSAddr);
+					}
+					
 // 				}
 			}
 
