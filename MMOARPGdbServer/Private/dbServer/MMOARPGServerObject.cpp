@@ -95,6 +95,10 @@ void UMMOARPGServerObejct::Init()
 		`MagicDefense_Current` double(11,4) DEFAULT '0.00',\
 		`AttackRange_Base` double(11,4) DEFAULT '0.00',\
 		`AttackRange_Current` double(11,4) DEFAULT '0.00',\
+		`EmpiricalValue_Base` double(11,4) DEFAULT '0.00',\
+		`EmpiricalValue_Current` double(11,4) DEFAULT '0.00',\
+		`MaxEmpiricalValue_Base` double(11,4) DEFAULT '0.00',\
+		`MaxEmpiricalValue_Current` double(11,4) DEFAULT '0.00',\
 		`ComboAttack` VARCHAR(256) NOT NULL,\
 		`Skill` VARCHAR(256) NOT NULL,\
 		`Limbs` VARCHAR(256) NOT NULL,\
@@ -1085,8 +1089,12 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 			 PhysicsDefense_Base,PhysicsDefense_Current,\
 			 MagicDefense_Base,MagicDefense_Current,\
 			 AttackRange_Base,AttackRange_Current,\
+			 EmpiricalValue_Base,EmpiricalValue_Current,\
+			 MaxEmpiricalValue_Base,MaxEmpiricalValue_Current,\
 			 ComboAttack,Skill,Limbs) VALUES(\
 			%i,%i,%i,\
+			%.2lf,%.2lf,\
+			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
@@ -1109,6 +1117,8 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.PhysicsDefense.BaseValue, InAttributeData.PhysicsDefense.CurrentValue,
 		InAttributeData.MagicDefense.BaseValue, InAttributeData.MagicDefense.CurrentValue,
 		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
+		InAttributeData.EmpiricalValue.BaseValue, InAttributeData.EmpiricalValue.CurrentValue,
+		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
 		*InAttributeData.ComboAttackToString(),
 		*InAttributeData.SkillToString(),
 		*InAttributeData.LimbsToString());
@@ -1146,6 +1156,10 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 			MagicDefense_Current=%.2lf,\
 			AttackRange_Base=%.2lf,\
 			AttackRange_Current=%.2lf,\
+			EmpiricalValue_Base=%.2lf,\
+			EmpiricalValue_Current=%.2lf,\
+			MaxEmpiricalValue_Base=%.2lf,\
+			MaxEmpiricalValue_Current=%.2lf,\
 			ComboAttack=\"%s\",\
 			Skill=\"%s\",\
 			Limbs=\"%s\" \
@@ -1160,6 +1174,8 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.PhysicsDefense.BaseValue, InAttributeData.PhysicsDefense.CurrentValue,
 		InAttributeData.MagicDefense.BaseValue, InAttributeData.MagicDefense.CurrentValue,
 		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
+		InAttributeData.EmpiricalValue.BaseValue, InAttributeData.EmpiricalValue.CurrentValue,
+		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
 		*InAttributeData.ComboAttackToString(),
 		*InAttributeData.SkillToString(),
 		*InAttributeData.LimbsToString(),
