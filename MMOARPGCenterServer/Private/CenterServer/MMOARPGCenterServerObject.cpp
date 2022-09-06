@@ -178,6 +178,123 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_SEND(SP_IdentityReplicationResponses, bIdentityReplication);
 			break;
 		}
+
+		/** 刷新人物属性点 请求 */
+		case SP_UpdateAttributeRequests:
+		{
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			MMOARPGCharacterAttributeType AttributeType = MMOARPGCharacterAttributeType::ATTRIBUTETYPE_NONE;
+			float InValue = 0.f;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateAttributeRequests, UserID, CharacterID, AttributeType, InValue);
+
+			bool bUpdateAttriSuccess = false;
+			// 多重保护
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && AttributeType != MMOARPGCharacterAttributeType::ATTRIBUTETYPE_NONE) {
+				
+				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {
+					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {
+						// 
+						auto WriteAttriValue = [](FMMOARPGAttributeData& InData, float InValue) {
+							InData.CurrentValue = InValue;
+							InData.BaseValue = InValue;
+						};
+
+						switch (AttributeType) {
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_LEVEL:
+							{
+								WriteAttriValue(InCharacterAttribute->Level, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_HEALTH:
+							{
+								WriteAttriValue(InCharacterAttribute->Health, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_MAXHEALTH:
+							{
+								WriteAttriValue(InCharacterAttribute->MaxHealth, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_MANA:
+							{
+								WriteAttriValue(InCharacterAttribute->Mana, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_MAXMANA:
+							{
+								WriteAttriValue(InCharacterAttribute->MaxMana, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_PHYSICSATTACK:
+							{
+								WriteAttriValue(InCharacterAttribute->PhysicsAttack, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_MAGICATTACK:
+							{
+								WriteAttriValue(InCharacterAttribute->MagicAttack, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_PHYSICSDEFENSE:
+							{
+								WriteAttriValue(InCharacterAttribute->PhysicsDefense, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_MAGICDEFENSE:
+							{
+								WriteAttriValue(InCharacterAttribute->MagicDefense, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_ATTACKRANGE:
+							{
+								WriteAttriValue(InCharacterAttribute->AttackRange, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_EMPIRICALVALUE:
+							{
+								WriteAttriValue(InCharacterAttribute->EmpiricalValue, InValue);
+								break;
+							}
+							case MMOARPGCharacterAttributeType::ATTRIBUTETYPE_MAXEMPIRICALVALUE:
+							{
+								WriteAttriValue(InCharacterAttribute->MaxEmpiricalValue, InValue);
+								break;
+							}
+							bUpdateAttriSuccess = true;
+						}
+					}
+				}
+			}
+			// 结果发给DS
+			SIMPLE_PROTOCOLS_SEND(SP_UpdateAttributeaResponses, bUpdateAttriSuccess);
+			break;
+		}
+
+		/** 升人物等级 请求 */
+		case SP_CharacterUpgradeLevelRequests:
+		{
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			FString CharacterAttributeJson;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterUpgradeLevelRequests, UserID, CharacterID, CharacterAttributeJson);
+			
+			bool bUpdateAttriSuccess = false;
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && !CharacterAttributeJson.IsEmpty()) {
+				// 先拿到玩家信息和人物属性
+				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {
+					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {
+						InCharacterAttribute->Clear();
+						if (NetDataAnalysis::StringToMMOARPGCharacterAttribute(CharacterAttributeJson, *InCharacterAttribute)) {
+							bUpdateAttriSuccess = true;
+						}
+					}
+				}
+			}
+			// 结果发给DS
+			SIMPLE_PROTOCOLS_SEND(SP_CharacterUpgradeLevelResponses, bUpdateAttriSuccess);
+			break;
+		}
 	}
 }
 
