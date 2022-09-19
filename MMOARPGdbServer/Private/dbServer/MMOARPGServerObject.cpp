@@ -694,7 +694,11 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 									GetAttributeInfo(TEXT("PhysicsDefense"), CharacterAttribute.PhysicsDefense, Tmp.Rows);
 									GetAttributeInfo(TEXT("MagicDefense"), CharacterAttribute.MagicDefense, Tmp.Rows);
 									GetAttributeInfo(TEXT("AttackRange"), CharacterAttribute.AttackRange, Tmp.Rows);
+									
 									GetAttributeInfo(TEXT("Level"), CharacterAttribute.Level, Tmp.Rows);
+
+									GetAttributeInfo(TEXT("EmpiricalValue"), CharacterAttribute.EmpiricalValue, Tmp.Rows);
+									GetAttributeInfo(TEXT("MaxEmpiricalValue"), CharacterAttribute.MaxEmpiricalValue, Tmp.Rows);
 
 									GetAttributeInfo(TEXT("ComboAttack"), CharacterAttribute.ComboAttack, Tmp.Rows);
 									GetAttributeInfo(TEXT("Skill"), CharacterAttribute.Skill, Tmp.Rows);

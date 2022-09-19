@@ -284,7 +284,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 				// 先拿到玩家信息和人物属性
 				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {
 					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {
-						InCharacterAttribute->Clear();
+						InCharacterAttribute->Clear();// 升级之前把原有技能池子先清空还原
 						if (NetDataAnalysis::StringToMMOARPGCharacterAttribute(CharacterAttributeJson, *InCharacterAttribute)) {
 							bUpdateAttriSuccess = true;
 						}
