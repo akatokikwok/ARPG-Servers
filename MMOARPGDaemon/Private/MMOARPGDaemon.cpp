@@ -38,7 +38,7 @@ INT32_MAIN_INT32_ARGC_TCHAR_ARGV()
 				CallExeProgram(Tmp.ExePath, Tmp.Param, Tmp.bVaild);
 			}
 		}
-		// 每隔一秒再次执行监测
+		// 每隔10秒再次重复检测 守护进程(这里通常被指定为DS服务器) 存活性,若DS被意外关闭,则间隔10秒再次把它拉起启用.
 		FPlatformProcess::Sleep(10.f);
 	}
 
