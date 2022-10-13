@@ -39,7 +39,7 @@ void UMMOARPGCenterServerObject::Close()
 	Super::Close();
 	// 断开或超时检测.
 	if (GetLinkType() == ECentralServerLinkType::GAME_DEDICATED_SERVER_LINK) {
-		RemoveDicatedServerInfo(DicatedServerKey);
+		//RemoveDicatedServerInfo(DicatedServerKey);
 
 		UE_LOG(LogMMOARPGCenterServer, Error, TEXT("[%s]A dedicated server has lost its link."),
 			*FSimpleNetManage::GetAddrString(DicatedServerKey));
