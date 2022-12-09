@@ -191,7 +191,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			bool bUpdateAttriSuccess = false;
 			// 多重保护
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && AttributeType != MMOARPGCharacterAttributeType::ATTRIBUTETYPE_NONE) {
-				
+
 				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {
 					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {
 						// 
@@ -278,7 +278,7 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			int32 CharacterID = INDEX_NONE;
 			FString CharacterAttributeJson;
 			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterUpgradeLevelRequests, UserID, CharacterID, CharacterAttributeJson);
-			
+
 			bool bUpdateAttriSuccess = false;
 			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && !CharacterAttributeJson.IsEmpty()) {
 				// 先拿到玩家信息和人物属性
@@ -293,6 +293,28 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			}
 			// 结果发给DS
 			SIMPLE_PROTOCOLS_SEND(SP_CharacterUpgradeLevelResponses, bUpdateAttriSuccess);
+			break;
+		}
+
+		/** 人物复活响应 */
+		case SP_CharacterResurrectionRequests:
+		{
+			// 对应GameMode里的AMMOARPGGameMode::CharacterResurrectionRequests(int32 InUserID, int32 InCharacterID)
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_CharacterResurrectionRequests, UserID, CharacterID);
+
+			bool bResurrection = false;
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE) {
+				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {
+					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {
+						InCharacterAttribute->Health = InCharacterAttribute->MaxHealth;
+						InCharacterAttribute->Mana = InCharacterAttribute->MaxMana;
+						bResurrection = true;
+					}
+				}
+			}
+			SIMPLE_PROTOCOLS_SEND(SP_CharacterResurrectionResponses, UserID, bResurrection);
 			break;
 		}
 	}
