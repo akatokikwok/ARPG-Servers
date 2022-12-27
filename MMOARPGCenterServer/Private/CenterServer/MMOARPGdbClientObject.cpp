@@ -7,6 +7,7 @@
 #include "ServerList.h"
 #include "MMOARPGType.h"
 #include "MMOARPGCenterServerObject.h"
+#include "../../../Plugins/SimpleNetChannel/Source/SimpleNetChannel/Public/Global/SimpleNetGlobalInfo.h"
 
 void UMMOARPGdbClientObject::Init()
 {
@@ -60,7 +61,9 @@ void UMMOARPGdbClientObject::RecvProtocol(uint32 InProtocol)
 						SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, *DsAddr);
 					}
 					else {
-						FSimpleAddr LocalDSAddr = FSimpleNetManage::GetSimpleAddr(TEXT("127.0.0.1"), 7777);
+						// 若没找到DS则以公网IP传入一个公网地址.
+						FString NewPublicIP = FSimpleNetGlobalInfo::Get()->GetInfo().PublicIP;
+						FSimpleAddr LocalDSAddr = FSimpleNetManage::GetSimpleAddr(*NewPublicIP, 7777);
 						SIMPLE_SERVER_SEND(CenterServer, SP_LoginToDSServerResponses, CenterAddrInfo, GateAddrInfo, LocalDSAddr);
 					}
 					
