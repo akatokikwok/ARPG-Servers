@@ -102,6 +102,7 @@ void UMMOARPGServerObejct::Init()
 		`ComboAttack` VARCHAR(256) NOT NULL,\
 		`Skill` VARCHAR(256) NOT NULL,\
 		`Limbs` VARCHAR(256) NOT NULL,\
+		`SkillAssembly` VARCHAR(256) NOT NULL,\
 		 PRIMARY KEY(`id`)\
 		) ENGINE = INNODB DEFAULT CHARSET = utf8; ");
 	if (!Post(Create_mmoarpg_character_a_SQL)) {
