@@ -704,6 +704,9 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 									GetAttributeInfo(TEXT("ComboAttack"), CharacterAttribute.ComboAttack, Tmp.Rows);
 									GetAttributeInfo(TEXT("Skill"), CharacterAttribute.Skill, Tmp.Rows);
 									GetAttributeInfo(TEXT("Limbs"), CharacterAttribute.Limbs, Tmp.Rows);
+
+									//技能装配信息
+									CharacterAttribute.SkillAssemblyString = *Tmp.Rows.Find(TEXT("SkillAssembly"));
 								}
 							}
 						}
@@ -1096,7 +1099,8 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 			 AttackRange_Base,AttackRange_Current,\
 			 EmpiricalValue_Base,EmpiricalValue_Current,\
 			 MaxEmpiricalValue_Base,MaxEmpiricalValue_Current,\
-			 ComboAttack,Skill,Limbs) VALUES(\
+			 ComboAttack,Skill,Limbs,\
+			 SkillAssembly) VALUES(\
 			%i,%i,%i,\
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
@@ -1110,7 +1114,8 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
-			\"%s\",\"%s\",\"%s\");"),
+			\"%s\",\"%s\",\"%s\",\
+			\"%s\");"),
 		InCharacterID, InUserID, MMOARPG_Slot,
 		InAttributeData.Level.BaseValue, InAttributeData.Level.CurrentValue,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
@@ -1126,7 +1131,9 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
 		*InAttributeData.ComboAttackToString(),
 		*InAttributeData.SkillToString(),
-		*InAttributeData.LimbsToString());
+		*InAttributeData.LimbsToString(),
+		*InAttributeData.SkillAssemblyString);
+
 
 	if (Post(SQL)) {
 		UE_LOG(LogMMOARPGdbServer, Display, TEXT("INSERT mmoarpg_characters_a true"));
@@ -1168,6 +1175,7 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 			ComboAttack=\"%s\",\
 			Skill=\"%s\",\
 			Limbs=\"%s\" \
+			SkillAssembly=\"%s\" \
 			WHERE character_id=%i and user_id = %i and mmoarpg_slot=%i;"),
 		InAttributeData.Level.BaseValue, InAttributeData.Level.CurrentValue,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
@@ -1184,6 +1192,7 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 		*InAttributeData.ComboAttackToString(),
 		*InAttributeData.SkillToString(),
 		*InAttributeData.LimbsToString(),
+		*InAttributeData.SkillAssemblyString,
 		InCharacterID, InUserID, MMOARPG_Slot);
 
 	if (Post(SQL)) {

@@ -317,6 +317,38 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 			SIMPLE_PROTOCOLS_SEND(SP_CharacterResurrectionResponses, UserID, bResurrection);
 			break;
 		}
+
+		/** 响应 刷新装配技能 */
+		case SP_UpdateSkillAssemblyRequests:
+		{
+			int32 UserID = INDEX_NONE;
+			int32 CharacterID = INDEX_NONE;
+			FString InStrValue;
+			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateSkillAssemblyRequests, UserID, CharacterID, InStrValue);
+
+			bool bUpdateAttriSuccess = false;
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && !InStrValue.IsEmpty()) {
+				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {
+					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {
+						// 装配技能槽位的赋值
+						InCharacterAttribute->SkillAssemblyString = InStrValue;
+
+						// 全部清除原先的技能
+						//InCharacterAttribute->Clear();
+
+						//技能拥有的赋值
+						//NetDataAnalysis::StringToMMOARPGAttributeSlot(BitSkillJson, InCharacterAttribute->Skill);
+						//NetDataAnalysis::StringToMMOARPGAttributeSlot(BitComboAttackJson, InCharacterAttribute->ComboAttack);
+						//NetDataAnalysis::StringToMMOARPGAttributeSlot(BitLimbsJson, InCharacterAttribute->Limbs);
+
+						bUpdateAttriSuccess = true;// 更新成功
+					}
+				}
+			}
+			// 结果发给DS
+			SIMPLE_PROTOCOLS_SEND(SP_UpdateSkillAssemblyResponses, UserID, bUpdateAttriSuccess);
+			break;
+		}
 	}
 }
 
