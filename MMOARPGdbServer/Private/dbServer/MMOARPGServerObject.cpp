@@ -1278,7 +1278,9 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 				RegisterMMOARPGAttributeData(InAttribute.MagicAttack, InJsonObject->GetNumberField(TEXT("MagicAttack")));
 				RegisterMMOARPGAttributeData(InAttribute.PhysicsDefense, InJsonObject->GetNumberField(TEXT("PhysicsDefense")));
 				RegisterMMOARPGAttributeData(InAttribute.MagicDefense, InJsonObject->GetNumberField(TEXT("MagicDefense")));
-				RegisterMMOARPGAttributeData(InAttribute.AttackRange, InJsonObject->GetNumberField(TEXT("AttackRange")));
+				RegisterMMOARPGAttributeData(InAttribute.MaxEmpiricalValue, InJsonObject->GetNumberField(TEXT("MaxEmpiricalValue")));
+
+				/* 关于三种类型的GA单独处理. */
 				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("ComboAttackTags")), InAttribute.ComboAttack.Slots);
 				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("SkillTags")), InAttribute.Skill.Slots);
 				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("LimbsTags")), InAttribute.Limbs.Slots);
