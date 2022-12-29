@@ -323,23 +323,35 @@ void UMMOARPGCenterServerObject::RecvProtocol(uint32 InProtocol)
 		{
 			int32 UserID = INDEX_NONE;
 			int32 CharacterID = INDEX_NONE;
+			// 客户端传来的已经序列化好了的装配技能的字符串
 			FString InStrValue;
-			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateSkillAssemblyRequests, UserID, CharacterID, InStrValue);
+			// 收到从客户端发来的三个类型的技能槽JSON
+			FString BitSkillJson;
+			FString BitComboAttackJson;
+			FString BitLimbsJson;
+
+			//
+			SIMPLE_PROTOCOLS_RECEIVE(SP_UpdateSkillAssemblyRequests, UserID, CharacterID, InStrValue, BitSkillJson,
+				BitComboAttackJson,
+				BitLimbsJson);
 
 			bool bUpdateAttriSuccess = false;
-			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && !InStrValue.IsEmpty()) {
+			if (UserID != INDEX_NONE && CharacterID != INDEX_NONE && !InStrValue.IsEmpty() &&
+				!BitSkillJson.IsEmpty() &&
+				!BitComboAttackJson.IsEmpty() &&
+				!BitLimbsJson.IsEmpty()) {
 				if (FMMOARPGPlayerRegistInfo* InUserData = FindPlayerData(UserID)) {
 					if (FMMOARPGCharacterAttribute* InCharacterAttribute = InUserData->CharacterAttributes.Find(CharacterID)) {
 						// 装配技能槽位的赋值
 						InCharacterAttribute->SkillAssemblyString = InStrValue;
 
 						// 全部清除原先的技能
-						//InCharacterAttribute->Clear();
+						InCharacterAttribute->Clear();
 
-						//技能拥有的赋值
-						//NetDataAnalysis::StringToMMOARPGAttributeSlot(BitSkillJson, InCharacterAttribute->Skill);
-						//NetDataAnalysis::StringToMMOARPGAttributeSlot(BitComboAttackJson, InCharacterAttribute->ComboAttack);
-						//NetDataAnalysis::StringToMMOARPGAttributeSlot(BitLimbsJson, InCharacterAttribute->Limbs);
+						// JSON语句解析成技能槽
+						NetDataAnalysis::StringToMMOARPGAttributeSlot(BitSkillJson, InCharacterAttribute->Skill);
+						NetDataAnalysis::StringToMMOARPGAttributeSlot(BitComboAttackJson, InCharacterAttribute->ComboAttack);
+						NetDataAnalysis::StringToMMOARPGAttributeSlot(BitLimbsJson, InCharacterAttribute->Limbs);
 
 						bUpdateAttriSuccess = true;// 更新成功
 					}
