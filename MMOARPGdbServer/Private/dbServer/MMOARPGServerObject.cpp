@@ -701,9 +701,9 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 									GetAttributeInfo(TEXT("EmpiricalValue"), CharacterAttribute.EmpiricalValue, Tmp.Rows);
 									GetAttributeInfo(TEXT("MaxEmpiricalValue"), CharacterAttribute.MaxEmpiricalValue, Tmp.Rows);
 
-									GetAttributeInfo(TEXT("ComboAttack"), CharacterAttribute.ComboAttack, Tmp.Rows);
-									GetAttributeInfo(TEXT("Skill"), CharacterAttribute.Skill, Tmp.Rows);
-									GetAttributeInfo(TEXT("Limbs"), CharacterAttribute.Limbs, Tmp.Rows);
+									GetAttributeInfo(TEXT("ComboAttack"), CharacterAttribute.ComboAttack.Slots, Tmp.Rows);
+									GetAttributeInfo(TEXT("Skill"), CharacterAttribute.Skill.Slots, Tmp.Rows);
+									GetAttributeInfo(TEXT("Limbs"), CharacterAttribute.Limbs.Slots, Tmp.Rows);
 
 									//技能装配信息
 									CharacterAttribute.SkillAssemblyString = *Tmp.Rows.Find(TEXT("SkillAssembly"));
@@ -1129,9 +1129,9 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
 		InAttributeData.EmpiricalValue.BaseValue, InAttributeData.EmpiricalValue.CurrentValue,
 		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
-		*InAttributeData.ComboAttackToString(),
-		*InAttributeData.SkillToString(),
-		*InAttributeData.LimbsToString(),
+		*InAttributeData.ComboAttack.ToString(),// 把Combo字符串叠上分隔符
+		*InAttributeData.Skill.ToString(),// 同上
+		*InAttributeData.Limbs.ToString(),// 同上
 		*InAttributeData.SkillAssemblyString);
 
 
@@ -1189,9 +1189,9 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
 		InAttributeData.EmpiricalValue.BaseValue, InAttributeData.EmpiricalValue.CurrentValue,
 		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
-		*InAttributeData.ComboAttackToString(),
-		*InAttributeData.SkillToString(),
-		*InAttributeData.LimbsToString(),
+		*InAttributeData.ComboAttack.ToString(),// 把Combo字符串叠上分隔符
+		*InAttributeData.Skill.ToString(),// 同上
+		*InAttributeData.Limbs.ToString(),// 同上
 		*InAttributeData.SkillAssemblyString,
 		InCharacterID, InUserID, MMOARPG_Slot);
 
@@ -1279,9 +1279,9 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 				RegisterMMOARPGAttributeData(InAttribute.PhysicsDefense, InJsonObject->GetNumberField(TEXT("PhysicsDefense")));
 				RegisterMMOARPGAttributeData(InAttribute.MagicDefense, InJsonObject->GetNumberField(TEXT("MagicDefense")));
 				RegisterMMOARPGAttributeData(InAttribute.AttackRange, InJsonObject->GetNumberField(TEXT("AttackRange")));
-				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("ComboAttackTags")), InAttribute.ComboAttack);
-				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("SkillTags")), InAttribute.Skill);
-				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("LimbsTags")), InAttribute.Limbs);
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("ComboAttackTags")), InAttribute.ComboAttack.Slots);
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("SkillTags")), InAttribute.Skill.Slots);
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("LimbsTags")), InAttribute.Limbs.Slots);
 			}
 		}
 		return true;
