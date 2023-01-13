@@ -1243,13 +1243,8 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 			TArray<FName> GamePlayTags;
 			for (auto& Tmp : GamePlayJsonTag) {
 				if (TSharedPtr<FJsonObject> InJsonObject = Tmp->AsObject()) {
-					const TArray<TSharedPtr<FJsonValue>>& SubGamePlayJsonTag = InJsonObject->GetArrayField(TEXT("GameplayTags"));
-					for (auto& SubTmp : SubGamePlayJsonTag) {
-						if (TSharedPtr<FJsonObject> InSubJsonObject = SubTmp->AsObject()) {
-							GamePlayTags.Add(*InSubJsonObject->GetStringField(TEXT("TagName")));
-// 							AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
-						}
-					}
+					GamePlayTags.Add(*InJsonObject->GetStringField(TEXT("TagName")));
+					UE_LOG(LogMMOARPGdbServer, Display, TEXT("Add TagName = %s;"), *InJsonObject->GetStringField(TEXT("TagName")));
 				}
 			}
 			// 将所有GTag合成一个更大的数组
