@@ -1150,35 +1150,35 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 {
 	FString SQL = FString::Printf(
 		TEXT("UPDATE mmoarpg_characters_a SET \
-			Level_Base=%.2lf,\
-			Level_Current=%.2lf,\
-			Health_Base=%.2lf,\
-			Health_Current=%.2lf,\
-			MaxHealth_Base=%.2lf,\
-			MaxHealth_Current=%.2lf,\
-			Mana_Base=%.2lf,\
-			Mana_Current=%.2lf,\
-			MaxMana_Base=%.2lf,\
-			MaxMana_Current=%.2lf,\
-			PhysicsAttack_Base=%.2lf,\
-			PhysicsAttack_Current=%.2lf,\
-			MagicAttack_Base=%.2lf,\
-			MagicAttack_Current=%.2lf,\
-			PhysicsDefense_Base=%.2lf,\
-			PhysicsDefense_Current=%.2lf,\
-			MagicDefense_Base=%.2lf,\
-			MagicDefense_Current=%.2lf,\
-			AttackRange_Base=%.2lf,\
-			AttackRange_Current=%.2lf,\
-			EmpiricalValue_Base=%.2lf,\
-			EmpiricalValue_Current=%.2lf,\
-			MaxEmpiricalValue_Base=%.2lf,\
-			MaxEmpiricalValue_Current=%.2lf,\
-			ComboAttack=\"%s\",\
-			Skill=\"%s\",\
-			Limbs=\"%s\" \
-			SkillAssembly=\"%s\" \
-			WHERE character_id=%i and user_id = %i and mmoarpg_slot=%i;"),
+		Level_Base=%.2lf,\
+		Level_Current=%.2lf,\
+		Health_Base=%.2lf,\
+		Health_Current=%.2lf,\
+		MaxHealth_Base=%.2lf,\
+		MaxHealth_Current=%.2lf,\
+		Mana_Base=%.2lf,\
+		Mana_Current=%.2lf,\
+		MaxMana_Base=%.2lf,\
+		MaxMana_Current=%.2lf,\
+		PhysicsAttack_Base=%.2lf,\
+		PhysicsAttack_Current=%.2lf,\
+		MagicAttack_Base=%.2lf,\
+		MagicAttack_Current=%.2lf,\
+		PhysicsDefense_Base=%.2lf,\
+		PhysicsDefense_Current=%.2lf,\
+		MagicDefense_Base=%.2lf,\
+		MagicDefense_Current=%.2lf,\
+		AttackRange_Base=%.2lf,\
+		AttackRange_Current=%.2lf,\
+		EmpiricalValue_Base=%.2lf,\
+		EmpiricalValue_Current=%.2lf,\
+		MaxEmpiricalValue_Base=%.2lf,\
+		MaxEmpiricalValue_Current=%.2lf,\
+		ComboAttack=\"%s\",\
+		Skill=\"%s\",\
+		Limbs=\"%s\",\
+		SkillAssembly=\"%s\" \
+		WHERE character_id=%i and user_id = %i and mmoarpg_slot=%i;"),
 		InAttributeData.Level.BaseValue, InAttributeData.Level.CurrentValue,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
 		InAttributeData.MaxHealth.BaseValue, InAttributeData.MaxHealth.CurrentValue,
@@ -1191,9 +1191,9 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
 		InAttributeData.EmpiricalValue.BaseValue, InAttributeData.EmpiricalValue.CurrentValue,
 		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
-		*InAttributeData.ComboAttack.ToString(),// 把Combo字符串叠上分隔符
-		*InAttributeData.Skill.ToString(),// 同上
-		*InAttributeData.Limbs.ToString(),// 同上
+		*InAttributeData.ComboAttack.ToString(),
+		*InAttributeData.Skill.ToString(),
+		*InAttributeData.Limbs.ToString(),
 		*InAttributeData.SkillAssemblyString,
 		InCharacterID, InUserID, MMOARPG_Slot);
 
