@@ -651,6 +651,8 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotCAInfoJson, GateAddrInfo, CenterAddrInfo);// 把处理后的用户信息JSON发出去.
 				}
 			}
+
+			break;
 		}
 
 		/** 游戏协议: GAS人物属性集请求. */
