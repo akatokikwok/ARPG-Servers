@@ -651,6 +651,8 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 					SIMPLE_PROTOCOLS_SEND(SP_PlayerRegistInfoResponses, UserInfoJson, SlotCAInfoJson, GateAddrInfo, CenterAddrInfo);// 把处理后的用户信息JSON发出去.
 				}
 			}
+
+			break;
 		}
 
 		/** 游戏协议: GAS人物属性集请求. */
@@ -701,9 +703,12 @@ void UMMOARPGServerObejct::RecvProtocol(uint32 InProtocol)
 									GetAttributeInfo(TEXT("EmpiricalValue"), CharacterAttribute.EmpiricalValue, Tmp.Rows);
 									GetAttributeInfo(TEXT("MaxEmpiricalValue"), CharacterAttribute.MaxEmpiricalValue, Tmp.Rows);
 
-									GetAttributeInfo(TEXT("ComboAttack"), CharacterAttribute.ComboAttack, Tmp.Rows);
-									GetAttributeInfo(TEXT("Skill"), CharacterAttribute.Skill, Tmp.Rows);
-									GetAttributeInfo(TEXT("Limbs"), CharacterAttribute.Limbs, Tmp.Rows);
+									GetAttributeInfo(TEXT("ComboAttack"), CharacterAttribute.ComboAttack.Slots, Tmp.Rows);
+									GetAttributeInfo(TEXT("Skill"), CharacterAttribute.Skill.Slots, Tmp.Rows);
+									GetAttributeInfo(TEXT("Limbs"), CharacterAttribute.Limbs.Slots, Tmp.Rows);
+
+									//技能装配信息
+									CharacterAttribute.SkillAssemblyString = *Tmp.Rows.Find(TEXT("SkillAssembly"));
 								}
 							}
 						}
@@ -1096,7 +1101,8 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 			 AttackRange_Base,AttackRange_Current,\
 			 EmpiricalValue_Base,EmpiricalValue_Current,\
 			 MaxEmpiricalValue_Base,MaxEmpiricalValue_Current,\
-			 ComboAttack,Skill,Limbs) VALUES(\
+			 ComboAttack,Skill,Limbs,\
+			 SkillAssembly) VALUES(\
 			%i,%i,%i,\
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
@@ -1110,7 +1116,8 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
 			%.2lf,%.2lf,\
-			\"%s\",\"%s\",\"%s\");"),
+			\"%s\",\"%s\",\"%s\",\
+			\"%s\");"),
 		InCharacterID, InUserID, MMOARPG_Slot,
 		InAttributeData.Level.BaseValue, InAttributeData.Level.CurrentValue,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
@@ -1124,9 +1131,11 @@ bool UMMOARPGServerObejct::CreateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
 		InAttributeData.EmpiricalValue.BaseValue, InAttributeData.EmpiricalValue.CurrentValue,
 		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
-		*InAttributeData.ComboAttackToString(),
-		*InAttributeData.SkillToString(),
-		*InAttributeData.LimbsToString());
+		*InAttributeData.ComboAttack.ToString(),// 把Combo字符串叠上分隔符
+		*InAttributeData.Skill.ToString(),// 同上
+		*InAttributeData.Limbs.ToString(),// 同上
+		*InAttributeData.SkillAssemblyString);
+
 
 	if (Post(SQL)) {
 		UE_LOG(LogMMOARPGdbServer, Display, TEXT("INSERT mmoarpg_characters_a true"));
@@ -1141,34 +1150,35 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 {
 	FString SQL = FString::Printf(
 		TEXT("UPDATE mmoarpg_characters_a SET \
-			Level_Base=%.2lf,\
-			Level_Current=%.2lf,\
-			Health_Base=%.2lf,\
-			Health_Current=%.2lf,\
-			MaxHealth_Base=%.2lf,\
-			MaxHealth_Current=%.2lf,\
-			Mana_Base=%.2lf,\
-			Mana_Current=%.2lf,\
-			MaxMana_Base=%.2lf,\
-			MaxMana_Current=%.2lf,\
-			PhysicsAttack_Base=%.2lf,\
-			PhysicsAttack_Current=%.2lf,\
-			MagicAttack_Base=%.2lf,\
-			MagicAttack_Current=%.2lf,\
-			PhysicsDefense_Base=%.2lf,\
-			PhysicsDefense_Current=%.2lf,\
-			MagicDefense_Base=%.2lf,\
-			MagicDefense_Current=%.2lf,\
-			AttackRange_Base=%.2lf,\
-			AttackRange_Current=%.2lf,\
-			EmpiricalValue_Base=%.2lf,\
-			EmpiricalValue_Current=%.2lf,\
-			MaxEmpiricalValue_Base=%.2lf,\
-			MaxEmpiricalValue_Current=%.2lf,\
-			ComboAttack=\"%s\",\
-			Skill=\"%s\",\
-			Limbs=\"%s\" \
-			WHERE character_id=%i and user_id = %i and mmoarpg_slot=%i;"),
+		Level_Base=%.2lf,\
+		Level_Current=%.2lf,\
+		Health_Base=%.2lf,\
+		Health_Current=%.2lf,\
+		MaxHealth_Base=%.2lf,\
+		MaxHealth_Current=%.2lf,\
+		Mana_Base=%.2lf,\
+		Mana_Current=%.2lf,\
+		MaxMana_Base=%.2lf,\
+		MaxMana_Current=%.2lf,\
+		PhysicsAttack_Base=%.2lf,\
+		PhysicsAttack_Current=%.2lf,\
+		MagicAttack_Base=%.2lf,\
+		MagicAttack_Current=%.2lf,\
+		PhysicsDefense_Base=%.2lf,\
+		PhysicsDefense_Current=%.2lf,\
+		MagicDefense_Base=%.2lf,\
+		MagicDefense_Current=%.2lf,\
+		AttackRange_Base=%.2lf,\
+		AttackRange_Current=%.2lf,\
+		EmpiricalValue_Base=%.2lf,\
+		EmpiricalValue_Current=%.2lf,\
+		MaxEmpiricalValue_Base=%.2lf,\
+		MaxEmpiricalValue_Current=%.2lf,\
+		ComboAttack=\"%s\",\
+		Skill=\"%s\",\
+		Limbs=\"%s\",\
+		SkillAssembly=\"%s\" \
+		WHERE character_id=%i and user_id = %i and mmoarpg_slot=%i;"),
 		InAttributeData.Level.BaseValue, InAttributeData.Level.CurrentValue,
 		InAttributeData.Health.BaseValue, InAttributeData.Health.CurrentValue,
 		InAttributeData.MaxHealth.BaseValue, InAttributeData.MaxHealth.CurrentValue,
@@ -1181,9 +1191,10 @@ bool UMMOARPGServerObejct::UpdateCharacterAttributeInfo(int32 InUserID, int32 In
 		InAttributeData.AttackRange.BaseValue, InAttributeData.AttackRange.CurrentValue,
 		InAttributeData.EmpiricalValue.BaseValue, InAttributeData.EmpiricalValue.CurrentValue,
 		InAttributeData.MaxEmpiricalValue.BaseValue, InAttributeData.MaxEmpiricalValue.CurrentValue,
-		*InAttributeData.ComboAttackToString(),
-		*InAttributeData.SkillToString(),
-		*InAttributeData.LimbsToString(),
+		*InAttributeData.ComboAttack.ToString(),
+		*InAttributeData.Skill.ToString(),
+		*InAttributeData.Limbs.ToString(),
+		*InAttributeData.SkillAssemblyString,
 		InCharacterID, InUserID, MMOARPG_Slot);
 
 	if (Post(SQL)) {
@@ -1234,13 +1245,8 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 			TArray<FName> GamePlayTags;
 			for (auto& Tmp : GamePlayJsonTag) {
 				if (TSharedPtr<FJsonObject> InJsonObject = Tmp->AsObject()) {
-					const TArray<TSharedPtr<FJsonValue>>& SubGamePlayJsonTag = InJsonObject->GetArrayField(TEXT("GameplayTags"));
-					for (auto& SubTmp : SubGamePlayJsonTag) {
-						if (TSharedPtr<FJsonObject> InSubJsonObject = SubTmp->AsObject()) {
-							GamePlayTags.Add(*InSubJsonObject->GetStringField(TEXT("TagName")));
-// 							AnalysisGamePlayTagsToArrayName(GamePlayTags, OutTag);
-						}
-					}
+					GamePlayTags.Add(*InJsonObject->GetStringField(TEXT("TagName")));
+					UE_LOG(LogMMOARPGdbServer, Display, TEXT("Add TagName = %s;"), *InJsonObject->GetStringField(TEXT("TagName")));
 				}
 			}
 			// 将所有GTag合成一个更大的数组
@@ -1269,10 +1275,12 @@ bool UMMOARPGServerObejct::InitCharacterAttribute(const FString& InPath)
 				RegisterMMOARPGAttributeData(InAttribute.MagicAttack, InJsonObject->GetNumberField(TEXT("MagicAttack")));
 				RegisterMMOARPGAttributeData(InAttribute.PhysicsDefense, InJsonObject->GetNumberField(TEXT("PhysicsDefense")));
 				RegisterMMOARPGAttributeData(InAttribute.MagicDefense, InJsonObject->GetNumberField(TEXT("MagicDefense")));
-				RegisterMMOARPGAttributeData(InAttribute.AttackRange, InJsonObject->GetNumberField(TEXT("AttackRange")));
-				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("ComboAttackTags")), InAttribute.ComboAttack);
-				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("SkillTags")), InAttribute.Skill);
-				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("LimbsTags")), InAttribute.Limbs);
+				RegisterMMOARPGAttributeData(InAttribute.MaxEmpiricalValue, InJsonObject->GetNumberField(TEXT("MaxEmpiricalValue")));
+
+				/* 关于三种类型的GA单独处理. */
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("ComboAttackTags")), InAttribute.ComboAttack.Slots);
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("SkillTags")), InAttribute.Skill.Slots);
+				RegisterGameplayTag(InJsonObject->GetArrayField(TEXT("LimbsTags")), InAttribute.Limbs.Slots);
 			}
 		}
 		return true;
